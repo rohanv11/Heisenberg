@@ -1,7 +1,10 @@
 FROM python:3.12-slim
 
 # Set the working directory
-WORKDIR /usr/src/app
+WORKDIR /usr/src
+
+# Install vim (or nano) to allow text editing in the container
+RUN apt-get update && apt-get install -y vim
 
 # Copy the requirements file
 COPY requirements.txt ./
@@ -10,7 +13,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the app code
-COPY ./app ./app
+COPY ./ ./
 
 # Expose the port
 EXPOSE 8000

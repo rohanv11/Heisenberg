@@ -1,0 +1,53 @@
+# Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# virtualenv
+venv/
+env/
+*.egg
+
+# IDEs
+.vscode/
+.idea/
+
+# Pytest
+*.log
+*.pot
+*.mo
+*.coverage
+.coverage.*
+nosetests.xml
+test_*.xml
+
+# mypy
+.mypy_cache/
+
+# Flask/Django cache and logs
+*.log
+instance/
+.webassets-cache
+
+# Docker
+*.dockerignore
+.docker-compose.override.yml
+docker-compose.override.yml
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
