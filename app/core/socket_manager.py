@@ -11,6 +11,9 @@ rooms = {}
 def generate_room_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
+def generate_room_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
 @sio.event
 async def connect(sid, environ):
     print(f"Client connected: {sid}")
