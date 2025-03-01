@@ -1,0 +1,52 @@
+
+"Project": "Making Game",
+Name: Rockefeller
+Game Brief: "Its a monopoly-like board game, which every one plays one after the other using rolling two die",
+
+Board_Setup: 
+The board contains multiple properties like mumbai, delhi, agra, lucknow, kanpur etc.
+Each property belongs to a color set.
+For Example, Mumbai, Delhi are of Blue Color set.
+The Board can be created using a config.
+Each property has some attribues associated with it.
+There is also a stock market running in the the game virtually(that updates very turn, not like 
+real world stock market that updates very micro second).
+
+Property Schema
+property_name
+Buy price: At which the property can be bought.
+Mortgage price: At which the property con be Mortgaged.
+House build price: Prices at which houses can be built.
+Rent (no house):
+Rent with 1 house.
+Rent with 2 houses.
+Rent with 3 houses.
+Rent with 4 houses.
+Rent with Hotel.
+
+
+What can a player do with the property?
+
+Every property is capable of building 4 houses onto it.
+Once you buy a property, anyone who lands on the property pays the rent of the property to the owner
+You start with just buying the property with no houses built.
+Then, there is condition for you to be applicable to build houses.
+A player must own all the houses in one set, then he can start building houses.
+Now there are two ways to build houses.
+1st Even build
+    You have to build houses evenly on all properties of the set.
+2nd Random build.
+    You can build all the houses at once on one property, and then go to the other property.
+    So one property can have 1 house while other has 4 houses.
+
+The above way is a Game config. It should be done using a config.
+For eg, if even_build is chosen by user, we uses first way, else we use Random build.
+
+What can a player do with stock market?
+
+Player can use their cash to buy stocks, as a person would buy them in the real world.
+Players can also list their properties on stock market along with other companies already in it.
+
+
+
+

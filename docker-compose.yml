@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  heisenberg-local-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/usr/src
+    entrypoint: ["uvicorn"]
+    command: ["app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    container_name: "heisenberg"
+    environment:
+      - ENV=development
+      - DEBUG=True
+      - CENTRIFUGO_HOST=centrifugo
+      - CENTRIFUGO_PORT=8001
+      - CENTRIFUGO_API_KEY=api_key_here
+      - CENTRIFUGO_SECRET=secret_key_here
+    depends_on:
+      - centrifugo
+
+  centrifugo:
+    image: centrifugo/centrifugo:v4
+    container_name: centrifugo
+    volumes:
+      - ./centrifugo.json:/centrifugo/config.json
+    ports:
+      - "8001:8001"
+    command: centrifugo --config=config.json
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535

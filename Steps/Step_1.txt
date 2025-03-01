@@ -1,0 +1,50 @@
+tech description: 
+we are going to use python fastapi framework for the server implementation and centrifugo web server 
+for realtime events broadcasting, room creation etc.
+
+This will run in a dockerized manner:
+
+Can you setup the project with the bare basics from where we can start adding features and tests.
+Just keep in mind, fast api server, and centrifugo for realtime connections.
+Create folders and files such that i can continue bulding features easily.
+
+A dummy dockerfile:
+
+FROM python:3.12-slim
+
+# Set the working directory
+WORKDIR /usr/src
+
+# Install vim (or nano) to allow text editing in the container
+RUN apt-get update && apt-get install -y vim
+
+# Copy the requirements file
+COPY requirements.txt ./
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the app code
+COPY ./ ./
+
+# Expose the port
+EXPOSE 8000
+
+# Start the application
+CMD ["uvicorn", "app.main:socket_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+
+A dummy docker-compose
+
+services:
+  heisenberg-local-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/usr/src
+    entrypoint: ["uvicorn"]
+    command: ["app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    container_name: "heisenberg"

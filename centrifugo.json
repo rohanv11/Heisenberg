@@ -1,0 +1,24 @@
+{
+  "token_hmac_secret_key": "secret_key_here",
+  "api_key": "api_key_here",
+  "admin_password": "admin_password_here",
+  "admin_secret": "admin_secret_here",
+  "admin": true,
+  "debug": true,
+  "port": 8001,
+  "allow_subscribe_for_client": true,
+  "allow_publish_for_client": false,
+  "allow_presence_for_client": true,
+  "allow_history_for_client": true,
+  "presence": true,
+  "history_size": 100,
+  "history_ttl": "60s",
+  "namespaces": [
+    {
+      "name": "game",
+      "presence": true,
+      "history_size": 100,
+      "history_ttl": "300s"
+    }
+  ]
+}
