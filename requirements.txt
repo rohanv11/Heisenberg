@@ -1,3 +1,0 @@
-fastapi==0.115.6
-python-socketio[asyncio]==5.11.4
-uvicorn==0.33.0
