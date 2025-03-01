@@ -1,0 +1,17 @@
+Next steps are, need to add a login using google oauth,
+so when any one joins, first time or even joins again, their current data like, existing cash and all is maintained.
+for a new comer, 50,000 cash is given in the beginning, 
+Also, since i am going to use mongo db for the game state, please use mongo db itself for saving login data.
+I have currently commented the centrifugo service code in docker-compose.yml file, so for now let it be,
+just add the mongodb  details their.
+Things i will save along with the necessary details like google id are:
+username: default will be made from email id, for luke_dunphy@gmail.com, will have username: luke_dunphy.
+name, email, created_at, updated_at
+games_played
+achievements: default empty dict
+current_game_details: defaults empty dict for now.
+
+implement the login, 
+user logins using google oauth.
+user entry gets created in DB.
+now user can create a new game room.

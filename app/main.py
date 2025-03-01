@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router as api_router
 from app.api.room_router import router as room_router
+from app.api.auth_router import router as auth_router
 from app.api.centrifugo_router import router as centrifugo_router
 from app.config.settings import DEBUG, SERVER_HOST, SERVER_PORT
+from app.config.backend import MongoDB
 
 # Create FastAPI app
 server_app = FastAPI(
@@ -15,6 +17,7 @@ server_app = FastAPI(
 )
 
 # Configure CORS
+## Find out how to configure CORS properly and why it's needed
 server_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, replace with specific origins
@@ -26,6 +29,7 @@ server_app.add_middleware(
 # Include routers
 server_app.include_router(api_router, prefix="/api")
 server_app.include_router(room_router, prefix="/api")
+server_app.include_router(auth_router, prefix="/api")
 server_app.include_router(centrifugo_router, prefix="/api")
 
 @server_app.get("/")
@@ -39,6 +43,17 @@ async def root():
 @server_app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@server_app.on_event("startup")
+async def startup_db_client():
+    await MongoDB.connect_to_mongo()
+
+
+@server_app.on_event("shutdown")
+async def shutdown_db_client():
+    await MongoDB.close_mongo_connection()
+
 
 if __name__ == "__main__":
     # This allows running the app directly with python app/main.py

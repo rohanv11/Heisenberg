@@ -1,0 +1,3 @@
+read the steps in stepss/step_2.txt and start dev on it. 
+Make sure you write good code following SOLID principles, good design patterns, tests,
+and basically simply to maintain and scalable code.

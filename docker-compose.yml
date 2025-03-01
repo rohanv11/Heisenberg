@@ -1,17 +1,16 @@
-version: '3.8'
-
 services:
   heisenberg-local-server:
     build:
       context: .
       dockerfile: Dockerfile
+    image: heisenberg:latest
+    container_name: heisenberg-local-server
     ports:
       - "8000:8000"
     volumes:
       - .:/usr/src
     entrypoint: ["uvicorn"]
     command: ["app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-    container_name: "heisenberg"
     environment:
       - ENV=development
       - DEBUG=True
@@ -19,18 +18,37 @@ services:
       - CENTRIFUGO_PORT=8001
       - CENTRIFUGO_API_KEY=api_key_here
       - CENTRIFUGO_SECRET=secret_key_here
+      - MONGO_URI=mongodb://mongodb:27017/heisenberg
+      - GOOGLE_CLIENT_ID=your_google_client_id
+      - GOOGLE_CLIENT_SECRET=your_google_client_secret
+      - OAUTH_REDIRECT_URL=http://localhost:8000/api/auth/callback
     depends_on:
-      - centrifugo
+      - mongodb
+    # depends_on:
+    #   - centrifugo
 
-  centrifugo:
-    image: centrifugo/centrifugo:v4
-    container_name: centrifugo
-    volumes:
-      - ./centrifugo.json:/centrifugo/config.json
+  # centrifugo:
+  #   image: centrifugo/centrifugo:v4
+  #   container_name: centrifugo
+  #   volumes:
+  #     - ./centrifugo.json:/centrifugo/config.json
+  #   ports:
+  #     - "8001:8001"
+  #   command: centrifugo --config=config.json
+  #   ulimits:
+  #     nofile:
+  #       soft: 65535
+  #       hard: 65535
+  
+  mongodb:
+    image: mongo:8.0
+    container_name: mongodb
     ports:
-      - "8001:8001"
-    command: centrifugo --config=config.json
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=heisenberg
+
+volumes:
+  mongodb_data:

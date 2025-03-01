@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from pydantic import HttpUrl
+from typing import Optional
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,6 +26,20 @@ CENTRIFUGO_PORT = os.getenv("CENTRIFUGO_PORT", "8001")
 CENTRIFUGO_API_KEY = os.getenv("CENTRIFUGO_API_KEY", "")
 CENTRIFUGO_SECRET = os.getenv("CENTRIFUGO_SECRET", "")
 
+# MongoDB Config
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/heisenberg")
+DB_NAME = os.path.basename(MONGO_URI) if "/" in MONGO_URI else "heisenberg"
+
+# Google OAuth Config
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+OAUTH_REDIRECT_URL = os.getenv("OAUTH_REDIRECT_URL", "http://localhost:8000/api/auth/callback")
+
+# JWT Config
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_MINUTES = 60 * 24 * 7  # 1 week
+
 # Game Config
 DEFAULT_GAME_CONFIG = {
     "even_build": os.getenv("EVEN_BUILD", "True").lower() in ("true", "1", "t"),
@@ -38,6 +54,9 @@ if IS_DEVELOPMENT:
 elif IS_PRODUCTION:
     # Production-specific settings
     DEBUG = False
+    assert GOOGLE_CLIENT_ID, "GOOGLE_CLIENT_ID must be set in production"
+    assert GOOGLE_CLIENT_SECRET, "GOOGLE_CLIENT_SECRET must be set in production"
+    assert JWT_SECRET_KEY != "supersecretkey", "JWT_SECRET_KEY must be changed in production"
 elif IS_TESTING:
     # Testing-specific settings
-    pass
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/heisenberg_test")

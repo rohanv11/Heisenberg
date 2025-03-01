@@ -11,7 +11,7 @@ class Player(BaseModel):
     cash: int
     properties: List[str] = []  # List of property_ids
     position: int = 0  # Current position on the board
-    stocks: Dict[str, int] = {}  # Stock symbol to quantity
+    stocks: Dict[str, int] = {}  # Stock id to quantity
     is_bankrupt: bool = False
     is_in_jail: bool = False
     jail_turns: int = 0
