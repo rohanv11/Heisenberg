@@ -5,6 +5,7 @@ from app.utils.common import generate_code
 from app.schemas.room import RoomCreate, RoomFull
 from app.core.game_config import game_rooms, player_to_game_rooms
 from app.room_management.room_validator import RoomValidator
+from app.utils.exceptions import RoomValidationException
 
 
 # Singleton
@@ -48,7 +49,8 @@ class RoomManager:
         room_code = self._generate_unique_code()
         room_full = RoomFull(**room_data.dict(), 
                              room_code=room_code, 
-                             players=[player_id])
+                             players=set([player_id]))
+
         game_rooms[room_code] = room_full
         player_to_game_rooms[player_id] = room_code
         return room_full
@@ -81,6 +83,33 @@ class RoomManager:
                         {"room": code, "members": details["members"]},
                         room=code,
                     )
+
+    async def leave_room(self, room_id: str, player_id: str) -> dict:
+        room = game_rooms.get(room_id)
+        if not room:
+            raise RoomValidationException(error_message="Room not found", status_code=400, 
+                                          data={"room_id": room_id, "player_id": player_id})
+
+        if player_id not in room.players:
+            raise RoomValidationException(error_message=f"Player with ID '{player_id}' not found in room '{room_id}'.", 
+                                          status_code=400, 
+                                          data={"room_id": room_id, "player_id": player_id})
+
+        room.players.remove(player_id)
+
+
+        if not room.players:
+            del game_rooms[room_id]  # Delete the room if empty
+        
+        else:
+            pass
+            # await sio.emit(
+            #     "room_update",
+            #     {"room": room_id, "members": room['members']},
+            #     room=room_id,
+            # )
+
+        return {"room_id": room_id, "members": room['members']}
 
     def _generate_unique_code(self) -> str:
         """

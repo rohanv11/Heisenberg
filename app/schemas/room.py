@@ -60,5 +60,5 @@ class RoomCreate(BaseModel):
 
 class RoomFull(RoomCreate):
     room_code: str
-    players: list[str] = [] #update this with class Player
+    players: set[str] = set() #update this with class Player
 
