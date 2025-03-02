@@ -1,12 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
 from app.api.router import router as api_router
 from app.api.room_router import router as room_router
 from app.api.auth_router import router as auth_router
 from app.api.centrifugo_router import router as centrifugo_router
 from app.config.settings import DEBUG, SERVER_HOST, SERVER_PORT
-from app.config.backend import MongoDB
+from app.config.backend import DatabaseManager
+from app.utils.logging_config import configure_logging
+
+# Configure all application logging in one place
+configure_logging()
 
 # Create FastAPI app
 server_app = FastAPI(
@@ -47,12 +52,12 @@ async def health_check():
 
 @server_app.on_event("startup")
 async def startup_db_client():
-    await MongoDB.connect_to_mongo()
+    await DatabaseManager.connect_to_mongo()
 
 
 @server_app.on_event("shutdown")
 async def shutdown_db_client():
-    await MongoDB.close_mongo_connection()
+    await DatabaseManager.close_mongo_connection()
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from app.models.room import Room, RoomStatus
 from app.models.game import GameConfig
 from app.models.player import Player
 from app.models.exceptions import NotHostError, RoomNotFoundError, UserNotFoundError
-from app.config.backend import MongoDB
+from app.config.backend import DatabaseManager
 
 
 # Mock data
@@ -89,16 +89,16 @@ def setup_mocks(mock_player, mock_room):
         mock_room_service.start_game.return_value = True
         mock_room_service.end_turn.return_value = True
         
-        # MongoDB mocks
-        MongoDB.db = MagicMock()
-        MongoDB.client = MagicMock()
+        # DatabaseManager mocks
+        DatabaseManager.mongo_db = MagicMock()
+        DatabaseManager.mongo_client = MagicMock()
         
         # Create mock collections
         rooms_collection = AsyncMock()
         users_collection = AsyncMock()
         
         # Setup collection returns
-        MongoDB.get_collection = MagicMock(side_effect=lambda name: 
+        DatabaseManager.get_collection = MagicMock(side_effect=lambda name: 
             rooms_collection if name == "rooms" else users_collection)
         
         # Setup MongoDB find_one return

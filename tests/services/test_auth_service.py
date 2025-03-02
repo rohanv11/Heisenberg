@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from app.services.auth_service import AuthService
 from app.models.user import UserInDB
-from app.config.backend import MongoDB
+from app.config.backend import DatabaseManager
 from jose import jwt
 
 # Mock data
@@ -20,23 +20,23 @@ def auth_service():
 
 
 @pytest.fixture
-async def setup_mongodb():
-    # Mock the MongoDB connection and client
-    MongoDB.db = MagicMock()
-    MongoDB.client = MagicMock()
+async def setup_database():
+    # Mock the DatabaseManager connection and client
+    DatabaseManager.mongo_db = MagicMock()
+    DatabaseManager.mongo_client = MagicMock()
     
     # Create a mock users collection
     users_collection = AsyncMock()
-    MongoDB.db = {"users": users_collection}
-    MongoDB.get_collection = MagicMock(return_value=users_collection)
+    DatabaseManager.mongo_db = {"users": users_collection}
+    DatabaseManager.get_collection = MagicMock(return_value=users_collection)
     
     return users_collection
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_new_user(auth_service, setup_mongodb):
+async def test_authenticate_user_new_user(auth_service, setup_database):
     # Setup
-    users_collection = setup_mongodb
+    users_collection = setup_database
     users_collection.find_one.return_value = None  # User doesn't exist yet
     
     # Mock the OAuth token exchange and profile info
@@ -64,9 +64,9 @@ async def test_authenticate_user_new_user(auth_service, setup_mongodb):
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_existing_user(auth_service, setup_mongodb):
+async def test_authenticate_user_existing_user(auth_service, setup_database):
     # Setup
-    users_collection = setup_mongodb
+    users_collection = setup_database
     
     # Create mock user that already exists in DB
     existing_user = {
@@ -110,9 +110,9 @@ async def test_authenticate_user_existing_user(auth_service, setup_mongodb):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user(auth_service, setup_mongodb):
+async def test_get_current_user(auth_service, setup_database):
     # Setup
-    users_collection = setup_mongodb
+    users_collection = setup_database
     
     # Create mock user
     existing_user = {
@@ -147,7 +147,7 @@ async def test_get_current_user(auth_service, setup_mongodb):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_invalid_token(auth_service, setup_mongodb):
+async def test_get_current_user_invalid_token(auth_service, setup_database):
     # Setup - Invalid token
     invalid_token = "invalid.token.string"
     

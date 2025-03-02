@@ -30,6 +30,11 @@ CENTRIFUGO_SECRET = os.getenv("CENTRIFUGO_SECRET", "")
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/heisenberg")
 DB_NAME = os.path.basename(MONGO_URI) if "/" in MONGO_URI else "heisenberg"
 
+# Logging Configuration
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")  # Default log level for the application
+MONGO_LOG_LEVEL = os.getenv("MONGO_LOG_LEVEL", "WARNING")  # MongoDB log level
+UVICORN_LOG_LEVEL = os.getenv("UVICORN_LOG_LEVEL", "INFO")  # Uvicorn/FastAPI log level
+
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")

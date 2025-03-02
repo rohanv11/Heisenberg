@@ -10,7 +10,7 @@ from app.models.game import GameConfig
 from app.models.player import Player
 from app.models.user import UserInDB
 from app.config import game_config
-from app.config.backend import MongoDB, USERS_COLLECTION
+from app.config.backend import DatabaseManager, USERS_COLLECTION
 
 
 class RoomService:
@@ -224,8 +224,8 @@ class RoomServiceWithAuth:
         player = room_data["player"]
         
         # Prepare the operations
-        rooms_collection = MongoDB.get_collection(ROOMS_COLLECTION)
-        users_collection = MongoDB.get_collection(USERS_COLLECTION)
+        rooms_collection = DatabaseManager.get_collection(ROOMS_COLLECTION)
+        users_collection = DatabaseManager.get_collection(USERS_COLLECTION)
         
         # Perform the database operations
         try:
@@ -278,8 +278,8 @@ class RoomServiceWithAuth:
             raise GameError(detail="Failed to join room")
         
         # Prepare the operations
-        rooms_collection = MongoDB.get_collection(ROOMS_COLLECTION)
-        users_collection = MongoDB.get_collection(USERS_COLLECTION)
+        rooms_collection = DatabaseManager.get_collection(ROOMS_COLLECTION)
+        users_collection = DatabaseManager.get_collection(USERS_COLLECTION)
         
         # Perform the database operations
         try:
@@ -321,7 +321,7 @@ class RoomServiceWithAuth:
             raise RoomNotFoundError(room_id)
             
         # Get user details
-        users_collection = MongoDB.get_collection(USERS_COLLECTION)
+        users_collection = DatabaseManager.get_collection(USERS_COLLECTION)
         user_doc = await users_collection.find_one({"google_id": user.google_id})
         
         if not user_doc:
@@ -358,7 +358,7 @@ class RoomServiceWithAuth:
             raise GameError(detail="Failed to start game")
         
         # Prepare the operations
-        rooms_collection = MongoDB.get_collection(ROOMS_COLLECTION)
+        rooms_collection = DatabaseManager.get_collection(ROOMS_COLLECTION)
         
         # Perform the database operations
         try:
@@ -424,7 +424,7 @@ class RoomServiceWithAuth:
             raise GameError(detail=f"Game in room {room_id} is not in progress")
         
         # Get user details
-        users_collection = MongoDB.get_collection(USERS_COLLECTION)
+        users_collection = DatabaseManager.get_collection(USERS_COLLECTION)
         user_doc = await users_collection.find_one({"google_id": user.google_id})
         
         if not user_doc:
@@ -452,7 +452,7 @@ class RoomServiceWithAuth:
             raise GameError(detail="Failed to end turn")
         
         # Prepare the operations
-        rooms_collection = MongoDB.get_collection(ROOMS_COLLECTION)
+        rooms_collection = DatabaseManager.get_collection(ROOMS_COLLECTION)
         
         # Perform the database operations
         try:

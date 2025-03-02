@@ -12,7 +12,7 @@ from app.config.settings import (
     JWT_ALGORITHM,
     JWT_EXPIRATION_MINUTES
 )
-from app.config.backend import MongoDB, USERS_COLLECTION
+from app.config.backend import DatabaseManager, USERS_COLLECTION
 from app.models.user import UserInDB, UserResponse
 
 
@@ -58,7 +58,7 @@ class AuthService:
             user_info = await self.get_user_info(token)
             
             # Check if user exists in the database
-            users_collection = MongoDB.get_collection(USERS_COLLECTION)
+            users_collection = DatabaseManager.get_collection(USERS_COLLECTION)
             user_doc = await users_collection.find_one({"google_id": user_info["sub"]})
             
             if user_doc:
@@ -109,7 +109,7 @@ class AuthService:
                 return None
             
             # Get user from database
-            users_collection = MongoDB.get_collection(USERS_COLLECTION)
+            users_collection = DatabaseManager.get_collection(USERS_COLLECTION)
             user_doc = await users_collection.find_one({"google_id": google_id})
             
             if user_doc is None:

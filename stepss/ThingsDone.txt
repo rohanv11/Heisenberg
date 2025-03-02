@@ -1,3 +1,48 @@
+2 March 2025
+
+I've centralized all logging configuration in a single location. Here's what I did:
+
+  1. Created a dedicated logging_config.py module in the utils package that handles all logging configuration in one place.
+  2. Defined three environment variables in settings.py for configuring different loggers:
+    - LOG_LEVEL: General application logging level
+    - MONGO_LOG_LEVEL: MongoDB-specific logging level
+    - UVICORN_LOG_LEVEL: FastAPI/Uvicorn logging level
+  3. Updated docker-compose.yml to include all log level environment variables with appropriate defaults.
+  4. Removed logging configuration from backend.py since it's now centralized.
+  5. Updated main.py to use the centralized configuration.
+
+  Now you can easily:
+  - Set MongoDB logs to ERROR level to suppress verbose output
+  - Keep FastAPI/Uvicorn logs at INFO level for request visibility
+  - Configure all logging from a single file
+
+  To adjust log levels, you just need to change the environment variables in docker-compose.yml.
+
+
+
+2 March 2025
+
+I've added MongoDB log level configuration to your application. Here's what I did:
+
+  1. Added a new setting MONGO_LOG_LEVEL in settings.py
+  2. Configured both pymongo and motor loggers in backend.py
+  3. Set up basic logging configuration in main.py
+  4. Added MONGO_LOG_LEVEL=ERROR in docker-compose.yml
+
+  Now MongoDB logs will be filtered based on the log level you set (ERROR in this case). This will suppress the debug and info logs you were
+  seeing.
+
+  To adjust log verbosity, you can change the MONGO_LOG_LEVEL environment variable to one of these values:
+  - CRITICAL (least verbose)
+  - ERROR
+  - WARNING
+  - INFO
+  - DEBUG (most verbose)
+
+
+1 March 2025
+
+
 This completes the implementation of Google OAuth authentication for the game, with MongoDB integration as per the requirements. Let's summarize
    what we've done:
 
@@ -14,4 +59,4 @@ This completes the implementation of Google OAuth authentication for the game, w
 
   All functionality is now ready for testing and further development.
 
-  
+
