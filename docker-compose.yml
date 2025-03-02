@@ -10,7 +10,7 @@ services:
     volumes:
       - .:/usr/src
     entrypoint: ["uvicorn"]
-    command: ["app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "info"]
     environment:
       - ENV=development
       - DEBUG=True
@@ -19,9 +19,9 @@ services:
       - CENTRIFUGO_API_KEY=api_key_here
       - CENTRIFUGO_SECRET=secret_key_here
       - MONGO_URI=mongodb://mongodb:27017/heisenberg
-      - LOG_LEVEL=INFO  # General application log level
-      - MONGO_LOG_LEVEL=ERROR  # Set to ERROR to minimize MongoDB logs
-      - UVICORN_LOG_LEVEL=INFO  # FastAPI/Uvicorn log level
+      - LOG_LEVEL=info  # General application log level
+      - MONGO_LOG_LEVEL=error  # Set to ERROR to minimize MongoDB logs
+      - UVICORN_LOG_LEVEL=info  # FastAPI/Uvicorn log level
       - GOOGLE_CLIENT_ID=your_google_client_id
       - GOOGLE_CLIENT_SECRET=your_google_client_secret
       - OAUTH_REDIRECT_URL=http://localhost:8000/api/auth/callback
