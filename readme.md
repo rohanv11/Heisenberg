@@ -113,8 +113,29 @@ Heisenberg/
 └── README.md            # Project documentation
 ```
 
-## TODO
-- Add debugger configuration
+## Debugging with VS Code
+
+You can debug the application using VS Code by following these steps:
+
+1. Set the `DEBUG_MODE` environment variable to `true` before starting the container:
+   ```bash
+   DEBUG_MODE=true docker-compose up
+   ```
+
+2. The application will start and wait for a debugger to connect on port 5678.
+
+3. In VS Code, use the "Run and Debug" panel and select "Attach to Docker" configuration.
+
+4. Set breakpoints in your code and start debugging.
+
+5. The debugger automatically installs `debugpy` in the container when needed.
+
+To disable debugging mode, simply set `DEBUG_MODE=false` or omit it:
+```bash
+docker-compose up
+```
+
+**Note:** When debugging is enabled, the application will pause at startup until VS Code connects to it.
 
 
 

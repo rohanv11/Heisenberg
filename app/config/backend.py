@@ -1,7 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
-from app.config.settings import MONGO_URI, DB_NAME
+import asyncpg
 import logging
+from app.config.settings import MONGO_URI, DB_NAME, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_HOST
 
 # Get logger for this module
 logger = logging.getLogger(__name__)
@@ -39,3 +40,37 @@ class DatabaseManager:
 
 # Database collections
 USERS_COLLECTION = "users"
+
+class PostgresManager:
+    _pool = None
+
+    @classmethod
+    async def connect_to_postgres(cls):
+        """Connect to PostgreSQL."""
+        if cls._pool is None:
+            try:
+                cls._pool = await asyncpg.create_pool(
+                    user=POSTGRES_USER,
+                    password=POSTGRES_PASSWORD,
+                    database=POSTGRES_DB,
+                    host=POSTGRES_HOST
+                )
+                logger.info("Connected to PostgreSQL")
+            except Exception as e:
+                logger.error(f"Failed to connect to PostgreSQL: {e}")
+                raise
+
+    @classmethod
+    async def close_postgres_connection(cls):
+        """Close PostgreSQL connection."""
+        if cls._pool is not None:
+            await cls._pool.close()
+            cls._pool = None
+            logger.info("Closed PostgreSQL connection")
+
+    @classmethod
+    async def get_pool(cls):
+        """Get the PostgreSQL connection pool."""
+        if cls._pool is None:
+            await cls.connect_to_postgres()
+        return cls._pool

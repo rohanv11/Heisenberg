@@ -7,26 +7,34 @@ services:
     container_name: heisenberg-local-server
     ports:
       - "8000:8000"
+      - "5678:5678"  # Remote debugger port
     volumes:
       - .:/usr/src
-    entrypoint: ["uvicorn"]
-    command: ["app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "info"]
+    entrypoint: ["python", "-m"]
+    command: ["app.main"]
     environment:
       - ENV=development
-      - DEBUG=True
+      - DEBUG_PORT=5678
+      - DEBUG_MODE=${DEBUG_MODE:-true}  # Enable/disable remote debugging
       - CENTRIFUGO_HOST=centrifugo
       - CENTRIFUGO_PORT=8001
       - CENTRIFUGO_API_KEY=api_key_here
       - CENTRIFUGO_SECRET=secret_key_here
       - MONGO_URI=mongodb://mongodb:27017/heisenberg
+      - POSTGRES_USER=your_user
+      - POSTGRES_PASSWORD=your_password
+      - POSTGRES_DB=heisenberg
+      - POSTGRES_HOST=postgres
       - LOG_LEVEL=info  # General application log level
       - MONGO_LOG_LEVEL=error  # Set to ERROR to minimize MongoDB logs
       - UVICORN_LOG_LEVEL=info  # FastAPI/Uvicorn log level
       - GOOGLE_CLIENT_ID=your_google_client_id
       - GOOGLE_CLIENT_SECRET=your_google_client_secret
       - OAUTH_REDIRECT_URL=http://localhost:8000/api/auth/callback
-    depends_on:
-      - mongodb
+      - PYTHONDONTWRITEBYTECODE=1  # Don't write .pyc files
+      - PYTHONUNBUFFERED=1  # Don't buffer stdout/stderr
+    # depends_on:
+    #   - postgres
     # depends_on:
     #   - centrifugo
 
@@ -43,15 +51,17 @@ services:
   #       soft: 65535
   #       hard: 65535
   
-  mongodb:
-    image: mongo:8.0
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    environment:
-      - MONGO_INITDB_DATABASE=heisenberg
+  # postgres:
+  #   image: postgres:17.4
+  #   container_name: postgres
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_USER: your_user
+  #     POSTGRES_PASSWORD: your_password
+  #     POSTGRES_DB: heisenberg
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  mongodb_data:
+# volumes:
+#   postgres_data:

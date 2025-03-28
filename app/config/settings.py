@@ -13,8 +13,11 @@ IS_PRODUCTION = ENV == "production"
 IS_TESTING = ENV == "testing"
 
 # Common Settings
-DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
+DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() in ("true", "1", "t")
 API_PREFIX = "/api"
+
+# Debugging Settings
+DEBUG_PORT = int(os.getenv("DEBUG_PORT", "5678"))
 
 # Server Config
 SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
@@ -31,9 +34,9 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/heisenberg")
 DB_NAME = os.path.basename(MONGO_URI) if "/" in MONGO_URI else "heisenberg"
 
 # Logging Configuration
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")  # Default log level for the application
-MONGO_LOG_LEVEL = os.getenv("MONGO_LOG_LEVEL", "WARNING")  # MongoDB log level
-UVICORN_LOG_LEVEL = os.getenv("UVICORN_LOG_LEVEL", "INFO")  # Uvicorn/FastAPI log level
+LOG_LEVEL = os.getenv("LOG_LEVEL", "info").lower()  # Default log level for the application
+MONGO_LOG_LEVEL = os.getenv("MONGO_LOG_LEVEL", "warning").lower()  # MongoDB log level
+UVICORN_LOG_LEVEL = os.getenv("UVICORN_LOG_LEVEL", "info").lower()  # Uvicorn/FastAPI log level
 
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -52,13 +55,19 @@ DEFAULT_GAME_CONFIG = {
     "max_players": int(os.getenv("MAX_PLAYERS_PER_ROOM", "4")),
 }
 
+# PostgreSQL Config
+POSTGRES_USER = os.getenv("POSTGRES_USER", "your_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "your_password")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "heisenberg")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+
 # Configuration based on environment
 if IS_DEVELOPMENT:
     # Development-specific settings
     pass
 elif IS_PRODUCTION:
     # Production-specific settings
-    DEBUG = False
+    DEBUG_MODE = False
     assert GOOGLE_CLIENT_ID, "GOOGLE_CLIENT_ID must be set in production"
     assert GOOGLE_CLIENT_SECRET, "GOOGLE_CLIENT_SECRET must be set in production"
     assert JWT_SECRET_KEY != "supersecretkey", "JWT_SECRET_KEY must be changed in production"

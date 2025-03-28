@@ -1,0 +1,38 @@
+actually, i just need one users collections
+and one games collection
+in users, ofcourse, personal info, google id etc.
+in rooms collection, the whole game data of one game for eg, room_id "123456", game_data: json
+
+game_data would rought lookly
+active: boolean
+state: in_progress/completed : enum
+players: []
+starting_amount: 
+each_turn: dict() -- here action takein by each player
+player_id: {} -- here player properties owned, stocks owned, remaining cash, name, symbol, networth would be stored. this will update each turn.
+
+each_turn : some what like this
+{
+"player": "dummy_1",
+"action":  {"b": dict}
+"dice_roll": 11,
+
+}
+
+
+now, i am keeping this data for two purposes,
+1. for debugging, if there is a bug, then if i simulate the game, then i would find 
+2. having a ai bot trained from it.
+
+
+Also, i am not going to query the data here, i.e. it would not query a turn in it or somthing.
+
+my major use case updated updating the same data, using the key room_id, 
+here is where i need your help.
+would sql db suffice? what is the max limit of json sql supports or nosql supports?
+how would i update the database each time, 
+
+like should i edit the json field 
+or do a json set, like where room_id = "12346", set game_data = {} (here provide the whole updated data at once)
+
+Please reason well and let me know

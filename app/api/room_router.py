@@ -4,6 +4,7 @@ API routes for room management.
 from fastapi import APIRouter, HTTPException, Body, Depends, status
 from typing import List, Optional, Dict
 from pydantic import BaseModel
+import logging
 
 from app.services.room_service import RoomServiceWithAuth
 from app.models.room import Room, RoomStatus
@@ -12,9 +13,11 @@ from app.models.player import Player
 from app.models.user import UserInDB
 from app.models.exceptions import GameError
 from app.api.dependencies import get_current_user
+from app.utils.exception_handlers import handle_exceptions
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class CreateRoomRequest(BaseModel):
@@ -25,6 +28,7 @@ class CreateRoomRequest(BaseModel):
 
 
 @router.post("/rooms", response_model=Dict)
+@handle_exceptions
 async def create_room(
     request: CreateRoomRequest,
     current_user: UserInDB = Depends(get_current_user)
@@ -32,25 +36,30 @@ async def create_room(
     """
     Create a new room with the authenticated user as host.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        config = GameConfig(
-            even_build=request.even_build,
-            starting_cash=request.starting_cash,
-            max_players=request.max_players
-        )
-        result = await room_service.create_room(request.room_name, current_user, config)
-        return result
-    except GameError as e:
-        raise e
-    except Exception as e:
+    if not request.room_name:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room name is required"
         )
+        
+    if request.max_players < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A room must allow at least 2 players"
+        )
+        
+    room_service = RoomServiceWithAuth.get_instance()
+    config = GameConfig(
+        even_build=request.even_build,
+        starting_cash=request.starting_cash,
+        max_players=request.max_players
+    )
+    result = await room_service.create_room(request.room_name, current_user, config)
+    return result
 
 
 @router.get("/rooms", response_model=List[Room])
+@handle_exceptions
 async def list_rooms(
     status: Optional[str] = None,
     current_user: UserInDB = Depends(get_current_user)
@@ -58,26 +67,22 @@ async def list_rooms(
     """
     List all rooms, optionally filtered by status.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        room_status = None
-        if status is not None:
-            try:
-                room_status = RoomStatus(status)
-            except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-        
-        return room_service.list_rooms(room_status)
-    except GameError as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+    room_service = RoomServiceWithAuth.get_instance()
+    room_status = None
+    if status is not None:
+        try:
+            room_status = RoomStatus(status)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail=f"Invalid status: {status}. Valid statuses are: {[s.value for s in RoomStatus]}"
+            )
+    
+    return room_service.list_rooms(room_status)
 
 
 @router.get("/rooms/{room_id}", response_model=Room)
+@handle_exceptions
 async def get_room(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -85,19 +90,18 @@ async def get_room(
     """
     Get a room by ID.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        return room_service.get_room(room_id)
-    except GameError as e:
-        raise e
-    except Exception as e:
+    if not room_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room ID is required"
         )
+        
+    room_service = RoomServiceWithAuth.get_instance()
+    return room_service.get_room(room_id)
 
 
 @router.post("/rooms/{room_id}/join", response_model=Player)
+@handle_exceptions
 async def join_room(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -105,20 +109,19 @@ async def join_room(
     """
     Join a room using the authenticated user.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        player = await room_service.join_room(room_id, current_user)
-        return player
-    except GameError as e:
-        raise e
-    except Exception as e:
+    if not room_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room ID is required"
         )
+        
+    room_service = RoomServiceWithAuth.get_instance()
+    player = await room_service.join_room(room_id, current_user)
+    return player
 
 
 @router.post("/rooms/{room_id}/start")
+@handle_exceptions
 async def start_game(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -126,20 +129,19 @@ async def start_game(
     """
     Start a game in the room. Only the host can start the game.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        success = await room_service.start_game(room_id, current_user)
-        return {"status": "started"}
-    except GameError as e:
-        raise e
-    except Exception as e:
+    if not room_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room ID is required"
         )
+        
+    room_service = RoomServiceWithAuth.get_instance()
+    success = await room_service.start_game(room_id, current_user)
+    return {"status": "started"}
 
 
 @router.post("/rooms/{room_id}/end-turn")
+@handle_exceptions
 async def end_turn(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -147,20 +149,19 @@ async def end_turn(
     """
     End the current player's turn. Only the current player can end their turn.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        success = await room_service.end_turn(room_id, current_user)
-        return {"status": "turn ended"}
-    except GameError as e:
-        raise e
-    except Exception as e:
+    if not room_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room ID is required"
         )
+        
+    room_service = RoomServiceWithAuth.get_instance()
+    success = await room_service.end_turn(room_id, current_user)
+    return {"status": "turn ended"}
 
 
 @router.get("/rooms/{room_id}/players", response_model=List[Player])
+@handle_exceptions
 async def get_players(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -168,14 +169,12 @@ async def get_players(
     """
     Get all players in a room.
     """
-    try:
-        room_service = RoomServiceWithAuth.get_instance()
-        players = room_service.get_players_in_room(room_id)
-        return players
-    except GameError as e:
-        raise e
-    except Exception as e:
+    if not room_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room ID is required"
         )
+        
+    room_service = RoomServiceWithAuth.get_instance()
+    players = room_service.get_players_in_room(room_id)
+    return players
