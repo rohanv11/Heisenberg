@@ -1,7 +1,7 @@
 import pytest
 from app.services.room_service import RoomService
 from app.models.game import GameConfig
-from app.models.room import RoomStatus
+from app.models.game_models import RoomStatus
 
 
 @pytest.fixture

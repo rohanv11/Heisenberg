@@ -1,0 +1,98 @@
+{
+    "IN": {
+            "0": {
+                "type": "START",
+                "name": "Start",
+                "financials": {
+                    "salary": 200
+                },
+                "players_here": [],
+                "pos": 0
+            },
+            "1": {
+                "type": "PROPERTY",
+                "name": "Guwahati",
+                "color": "brown",
+                "financials": {
+                    "price": 60,
+                    "mortgage": 30,
+                    "rent": 2,
+                    "rent_with_set": 4,
+                    "build_cost": 50,
+                    "house_rents": {
+                        "1": 10,
+                        "2": 30,
+                        "3": 90,
+                        "4": 160,
+                        "5": 250
+                    }
+                },
+                "owned_by": {},
+                "building_rights": null,
+                "builds": 0,
+                "income_earned": 0,
+                "players_here": [],
+                "set_complete": false,
+                "pos": 1
+            },
+            "2": {
+                "type": "CARD",
+                "name": "Community Chest",
+                "players_here": [],
+                "pos": 2
+            },
+            "3": {
+                "type": "PROPERTY",
+                "name": "Bhubaneswar",
+                "color": "brown",
+                "financials": {
+                    "price": 60,
+                    "mortgage": 30,
+                    "rent": 4,
+                    "rent_with_set": 8,
+                    "build_cost": 50,
+                    "house_rents": {
+                        "1": 20,
+                        "2": 60,
+                        "3": 180,
+                        "4": 320,
+                        "5": 450
+                    }
+                },
+                "owned_by": {},
+                "building_rights": null,
+                "builds": 0,
+                "income_earned": 0,
+                "players_here": [],
+                "set_complete": false,
+                "pos": 3
+            },
+            "4": {
+                "type": "INCOME_TAX",
+                "name": "Income Tax",
+                "players_here": [],
+                "pos": 4
+            },
+            "5": {
+                "type": "RAILWAY",
+                "name": "Mumbai Railway",
+                "financials": {
+                    "price": 200,
+                    "mortgage": 100,
+                    "rents": {
+                        "1": 25,
+                        "2": 50,
+                        "3": 100,
+                        "4": 200
+                    }
+                },
+                "owned_by": {},
+                "building_rights": null,
+                "builds": 0,
+                "income_earned": 0,
+                "players_here": [],
+                "set_complete": false,
+                "pos": 3
+            }
+    }
+}

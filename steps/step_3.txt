@@ -1,0 +1,103 @@
+Now we are going to focus on the following things.
+P0 Requirements to cover.
+In the MVP, decided not to add google oauth. keep it simple.
+
+Make sure you write a very efficient and maintable code.[make sure you consider SOLID principles and user proper
+dsesign patterns where you feel its necessary]
+We are using python fastapi and centrifugo sever as a transport layer (i chose it over websockets in python to avoid 
+complexities in python)
+
+
+Things i need you to do:
+Firstly in models folder there are many models like: board, game, player, property
+
+create a board route fetches the board data
+
+
+Board [rent, % ownership, building rights, Houses, Hotels]
+Game Rejoin using (Maintain last room joined in: Unity Local Cache)
+Starting Cash [1500, 2000, 2500, 3000]
+Rent in Jail. MVP
+Board: India
+Stock Market + News + Dividend.
+Stakes. MVP
+Trade possibilities (cash or whole property or property stake or shares or special card)..MVP
+House Build: enum[Even build, Random Build] MVP
+Net worth.[displayed at top right].MVP
+Income earned by each property display.
+Property Auction MVP
+
+
+
+
+Keep status[finished, crashed] for each game in the DB[every goddamn turn. MVP.
+Community chest/chance cards
+
+=======================================================================================
+2nD April, 2025 
+DONE
+@app I have added a sample board data file in boards.json, 
+which there are various attributes, 
+Now the front end client, will call the board api to get the board based on country, 
+here i habe added IN for example: So add a route for it. 
+
+add the board class to validate the board from json and then it must be returned.
+Some feilds are present in all the spaces name, type, players, here, pos,
+make them required true and for the rest of the feilds, give appropriate type 
+and mark them optional
+
+observe the game models file in class Room, there is a board_data (dict), that
+is used for maintaining the whole state of the board.
+for example in this monopoly like board game, the board data will be the truth 
+for who owns what, so when the game will be played, the clients will have the game 
+all in the board_data which frontend client will use to fill the board and each players
+possessions.
+Any model related to board, please keep in game_models.py file itself.
+
+
+This is a brief summary i have shared about the board.
+
+Please use appropriate Design patterns wherever it is necessary and do use SOLID
+principles as coding guidelines.
+
+Please ask if you have any questions, dont implement stuff with half information.
+
+DONE
+==================================================================================
+
+
+TESTING LEFT:
+
+2nd April 2025
+
+Now there is a route in board_router, that gives you board data on for given country, let that route be there.
+Now, what we want to do is, the plan is to use centrifugo as a transport layer, so that it scales well
+and i dont have to manage all realtime connections in websockets in python.
+If you can see the game_models, the class Room, this is basically what the client will create.
+So for now, dont take anything from client.
+Client must be able to create room, 
+now the room must be created with default IN board, and max players 4, and used the defaukt config.
+the board_data which is there in class Room use a post_load for it.
+Once client create room, the whole room data must be returned to the client, and essentially here,
+the client must be connection to the room use centrifugo, please go the docs i have shared for centrifugo.
+My point is, room must be created, the person who created it must be connected(as centrifugo used WebSockets), 
+and other must be able to join the room using the room_id, 
+Earlier i had coded a little bit of centrifugo in the repo, please make changes as needed.
+
+Please use appropriate Design patterns wherever it is necessary and do use SOLID
+principles as coding guidelines.
+
+Please ask if you have any questions, dont implement stuff with half information. 
+Prioritize clean, maintable and efficient code.
+
+===>
+TODO: 
+ROOM ID to be 6 DIGIT...DONE
+POST LOAD PART, remove the validator...DONE
+
+
+TESTING LEFT:
+
+==================================================================
+
+

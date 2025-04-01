@@ -4,8 +4,8 @@ from datetime import datetime
 
 from app.services.room_service import RoomServiceWithAuth, RoomService
 from app.models.user import UserInDB
-from app.models.room import Room, RoomStatus
-from app.models.game import GameConfig
+from app.models.game_models import Room, RoomStatus
+from app.models.game_models import GameConfig
 from app.models.player import Player
 from app.models.exceptions import NotHostError, RoomNotFoundError, UserNotFoundError
 from app.config.backend import DatabaseManager

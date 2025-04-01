@@ -8,6 +8,7 @@ import time
 from typing import Dict, Any, Optional, List
 
 import httpx
+import requests
 
 from app.config.settings import CENTRIFUGO_HOST, CENTRIFUGO_PORT, CENTRIFUGO_API_KEY
 
@@ -131,3 +132,23 @@ class CentrifugoService:
         ).hexdigest()
         
         return f"{signature}.{claims_json}"
+
+    @staticmethod
+    def connect_user_to_room(room_id: str):
+        """
+        Connect a user to a room using Centrifugo.
+        """
+        url = f"http://{CENTRIFUGO_HOST}:{CENTRIFUGO_PORT}/api"
+        headers = {
+            "Authorization": f"apikey {CENTRIFUGO_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "method": "subscribe",
+            "params": {
+                "channel": f"room_{room_id}"
+            }
+        }
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to connect to room: {response.text}")

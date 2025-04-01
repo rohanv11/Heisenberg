@@ -15,7 +15,7 @@ services:
     environment:
       - ENV=development
       - DEBUG_PORT=5678
-      - DEBUG_MODE=${DEBUG_MODE:-true}  # Enable/disable remote debugging
+      - DEBUG_MODE=${DEBUG_MODE:-false}  # Enable/disable remote debugging
       - CENTRIFUGO_HOST=centrifugo
       - CENTRIFUGO_PORT=8001
       - CENTRIFUGO_API_KEY=api_key_here
@@ -33,35 +33,34 @@ services:
       - OAUTH_REDIRECT_URL=http://localhost:8000/api/auth/callback
       - PYTHONDONTWRITEBYTECODE=1  # Don't write .pyc files
       - PYTHONUNBUFFERED=1  # Don't buffer stdout/stderr
-    # depends_on:
+    depends_on:
     #   - postgres
-    # depends_on:
-    #   - centrifugo
+      - centrifugo
 
-  # centrifugo:
-  #   image: centrifugo/centrifugo:v4
-  #   container_name: centrifugo
-  #   volumes:
-  #     - ./centrifugo.json:/centrifugo/config.json
-  #   ports:
-  #     - "8001:8001"
-  #   command: centrifugo --config=config.json
-  #   ulimits:
-  #     nofile:
-  #       soft: 65535
-  #       hard: 65535
+  centrifugo:
+    image: centrifugo/centrifugo:v6
+    container_name: centrifugo
+    volumes:
+      - ./centrifugo.json:/centrifugo/config.json
+    ports:
+      - "8001:8001"
+    command: centrifugo --config=config.json
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
   
-  # postgres:
-  #   image: postgres:17.4
-  #   container_name: postgres
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     POSTGRES_USER: your_user
-  #     POSTGRES_PASSWORD: your_password
-  #     POSTGRES_DB: heisenberg
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
+#   postgres:
+#     image: postgres:17.4
+#     container_name: postgres
+#     ports:
+#       - "5432:5432"
+#     environment:
+#       POSTGRES_USER: game_user_1
+#       POSTGRES_PASSWORD: game_master_1
+#       POSTGRES_DB: heisenberg
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
 
 # volumes:
 #   postgres_data:

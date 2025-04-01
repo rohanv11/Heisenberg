@@ -5,15 +5,19 @@ from fastapi import APIRouter, HTTPException, Body, Depends, status
 from typing import List, Optional, Dict
 from pydantic import BaseModel
 import logging
+import uuid
+import random
 
 from app.services.room_service import RoomServiceWithAuth
-from app.models.room import Room, RoomStatus
-from app.models.game import GameConfig
+from app.models.game_models import Room, RoomStatus, GameConfig, BoardData
+# from app.models.game import GameConfig
 from app.models.player import Player
 from app.models.user import UserInDB
 from app.models.exceptions import GameError
 from app.api.dependencies import get_current_user
 from app.utils.exception_handlers import handle_exceptions
+from app.services.board_service import BoardService
+from app.services.centrifugo_service import CentrifugoService
 
 
 router = APIRouter()
@@ -27,35 +31,27 @@ class CreateRoomRequest(BaseModel):
     max_players: Optional[int] = 4
 
 
-@router.post("/rooms", response_model=Dict)
-@handle_exceptions
-async def create_room(
-    request: CreateRoomRequest,
-    current_user: UserInDB = Depends(get_current_user)
-):
+@router.post("/rooms", response_model=Room)
+async def create_room():
     """
-    Create a new room with the authenticated user as host.
+    Create a new room with default settings.
     """
-    if not request.room_name:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Room name is required"
+    try:
+        # Generate a 6-digit numeric room ID
+        room_id = str(random.randint(100000, 999999))
+        
+        # Create room with default configuration
+        room = Room(
+            room_id=room_id,
+            config=GameConfig()
         )
         
-    if request.max_players < 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A room must allow at least 2 players"
-        )
+        # Connect the creator to the room using Centrifugo
+        CentrifugoService.connect_user_to_room(room_id)
         
-    room_service = RoomServiceWithAuth.get_instance()
-    config = GameConfig(
-        even_build=request.even_build,
-        starting_cash=request.starting_cash,
-        max_players=request.max_players
-    )
-    result = await room_service.create_room(request.room_name, current_user, config)
-    return result
+        return room
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/rooms", response_model=List[Room])
