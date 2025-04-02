@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from fastapi_socketio import SocketManager
 
 from app.api.router import router as api_router
 from app.api.room_router import router as room_router
@@ -44,8 +45,13 @@ register_exception_handlers(server_app)
 server_app.include_router(api_router, prefix="/api")
 server_app.include_router(room_router, prefix="/api")
 server_app.include_router(auth_router, prefix="/api")
-server_app.include_router(centrifugo_router, prefix="/api")
 server_app.include_router(board_router, prefix="/api")
+
+# Initialize Socket.IO
+sio = SocketManager(app=server_app)
+
+# Import socket events to register them
+from app.events import socket_events
 
 @server_app.get("/")
 async def root():

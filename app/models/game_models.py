@@ -1,8 +1,7 @@
-from pydantic import BaseModel, Field, RootModel, validator, root_validator
-from typing import List, Dict, Optional
+from pydantic import BaseModel, Field, RootModel, validator, model_validator
+from typing import List, Dict, Optional, Any
 from enum import Enum
 from datetime import datetime
-from app.services.board_service import BoardService
 
 
 # class SpaceType(str, Enum):
@@ -42,8 +41,8 @@ class GameStatus(str, Enum):
     FINISHED = "finished"  # Game has finished
 
 class BoardCountry(str, Enum):
-    US = "us"
-    IN = "in"
+    US = "US"
+    IN = "IN"
 
 class GameConfig(BaseModel):
     """
@@ -63,16 +62,31 @@ class RoomStatus(str, Enum):
     FINISHED = "finished"  # Game has finished
 
 
+class Player(BaseModel):
+    """
+    Model representing a player in the game.
+    """
+    player_id: str
+    name: str
+    cash: int
+    properties: List[str] = []  # List of property_ids
+    position: int = 0  # Current position on the board
+    stocks: Dict[str, int] = {}  # Stock id to quantity
+    is_bankrupt: bool = False
+    is_in_jail: bool = False
+    jail_turns: int = 0
+    get_out_of_jail_cards: int = 0
+
+
 class BoardSpaceData(BaseModel):
     """
     Model representing a space on the board.
     """
     name: str
     type: str
-    players_here: List[str]
     pos: int
-    financials: Optional[Dict] = None
-    owned_by: Optional[Dict] = None
+    financials: Optional[Dict[str, Any]] = None
+    owned_by: Optional[Dict[str, Any]] = None
     building_rights: Optional[str] = None
     builds: Optional[int] = 0
     income_earned: Optional[int] = 0
@@ -91,20 +105,16 @@ class Room(BaseModel):
     room_id: str
     status: RoomStatus = RoomStatus.WAITING
     config: GameConfig
-    players: List[str] = []  # List of player_ids
-    host_player_id: Optional[str] = None  # The player who created the room
-    # current_turn_player_id: Optional[str] = None  # player_id of current turn 
-    # this is a Board property not a rtoom property, (current_turn_player_id)
-    # turn_number: int = 0
+    players: List[Player] = []  # List of Player objects
+    host_player_id: Optional[str] = None  # The player ID who created the room
     created_at: str  # ISO format datetime
     updated_at: str  # ISO format datetime
-    # Game state will be stored here when the game starts
-
-    # this is post load
+    # Board is the source of truth for game state
     board_data: Optional[BoardData] = None  # Use BoardData class
 
-    @root_validator()
+    @model_validator(mode='after')
     def load_board_data(cls, values):
-        board_country = values.get('config', {}).get('board_country', 'IN')
-        values['board_data'] = BoardService.get_board(board_country)
+        from app.services.board_service import BoardService
+        board_country = values.config.board_country
+        values.board_data = BoardService.get_board(board_country)
         return values

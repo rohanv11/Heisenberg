@@ -16,10 +16,6 @@ services:
       - ENV=development
       - DEBUG_PORT=5678
       - DEBUG_MODE=${DEBUG_MODE:-false}  # Enable/disable remote debugging
-      - CENTRIFUGO_HOST=centrifugo
-      - CENTRIFUGO_PORT=8001
-      - CENTRIFUGO_API_KEY=api_key_here
-      - CENTRIFUGO_SECRET=secret_key_here
       - MONGO_URI=mongodb://mongodb:27017/heisenberg
       - POSTGRES_USER=your_user
       - POSTGRES_PASSWORD=your_password
@@ -33,22 +29,9 @@ services:
       - OAUTH_REDIRECT_URL=http://localhost:8000/api/auth/callback
       - PYTHONDONTWRITEBYTECODE=1  # Don't write .pyc files
       - PYTHONUNBUFFERED=1  # Don't buffer stdout/stderr
-    depends_on:
+    # depends_on:
     #   - postgres
-      - centrifugo
 
-  centrifugo:
-    image: centrifugo/centrifugo:v6
-    container_name: centrifugo
-    volumes:
-      - ./centrifugo.json:/centrifugo/config.json
-    ports:
-      - "8001:8001"
-    command: centrifugo --config=config.json
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
   
 #   postgres:
 #     image: postgres:17.4

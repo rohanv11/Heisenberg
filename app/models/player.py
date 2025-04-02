@@ -1,18 +1,3 @@
-from pydantic import BaseModel
-from typing import List, Dict, Optional
-
-
-class Player(BaseModel):
-    """
-    Model representing a player in the game.
-    """
-    player_id: str
-    name: str
-    cash: int
-    properties: List[str] = []  # List of property_ids
-    position: int = 0  # Current position on the board
-    stocks: Dict[str, int] = {}  # Stock id to quantity
-    is_bankrupt: bool = False
-    is_in_jail: bool = False
-    jail_turns: int = 0
-    get_out_of_jail_cards: int = 0
+# This file is kept for backward compatibility
+# The Player model has been moved to game_models.py
+# from app.models.game_models import Player

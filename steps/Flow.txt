@@ -1,0 +1,6 @@
+A Flow Information Decision diagram is needed see what all checks are needed for a certain action:
+for example:
+start_game:
+Check if player is the host
+Check if enough players
+Check if game already started

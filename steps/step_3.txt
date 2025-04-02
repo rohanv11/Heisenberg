@@ -65,7 +65,7 @@ Please ask if you have any questions, dont implement stuff with half information
 DONE
 ==================================================================================
 
-
+SCRAPPED CENTRIFUGO APPROACH
 TESTING LEFT:
 
 2nd April 2025
@@ -96,8 +96,73 @@ ROOM ID to be 6 DIGIT...DONE
 POST LOAD PART, remove the validator...DONE
 
 
-TESTING LEFT:
+SCRAPPED::
 
 ==================================================================
+
+I have removed centrifugo from docker compose and we are going with socket-io + fastapi to speed up the dev.
+Now, please remove any centrifugo code from repo where you find it.
+
+If you can see the game_models, the class Room, this is basically what the client will create.
+So for now, dont take any input from client about the config.
+Client(player) must be able to create room.
+now the room must be created with default IN board, and max players 4, and used the default config.
+Once player creates room, and player must get connected to the room using socketio, 
+the whole room data must be returned to the client. Or you know decide for yourself how best to acheive this.
+
+Also, there must be a feature to join the room, with a max limit of GameConfig.max_players value.
+
+Use Event Driven Architecture here, so now many events are going to happen back and forth.
+
+I have coded some things partial please finish the create room, join-room.
+
+Please use appropriate Design patterns wherever it is necessary and do use SOLID
+principles as coding guidelines.
+
+Please ask if you have any questions, dont implement stuff with half information. 
+Prioritize clean, maintable and efficient code.
+
+
+=========
+
+Firstly, the board will act as a source of truth for all the things, in the game.
+As you see in the BoardData model, for each board space, we have owned by, builds, etc.
+in BoardSpaceData class. so, when a new room is created, the players each will have initual cash as per the 
+config of the room(starting_cash in GameConfig), and not hardcoded, please update that
+The players in class Room must be of type Player and not str.
+Please move the player in game_models.py, need to have all the game related models in one file
+The whole data will be received by client in the Room itself
+
+
+keeping this for now
+To figure out: current_turn_player_id, turn_number
+# current_turn_player_id: Optional[str] = None  # player_id of current turn
+# this is a Board property not a rtoom property, (current_turn_player_id)
+# turn_number: int = 0
+
+
+
+Can we some how keep all the emit events together? like an atomic operation.
+beacuse if one fails then partial emissions will go, please figure out a way to do that.
+i can see two sio.emit, in disconnect....DONE
+
+⏺ Great! Our implementation is now complete with the following features:
+
+  1. Room creation with default settings (IN board, max 4 players)
+  2. Player joining with cash from the room config
+  3. Game start functionality
+  4. Player movement tracking using the Player.position attribute
+  5. Atomic event emission for SocketIO events
+  6. Both REST API and SocketIO interfaces for room management
+  7. Tests to verify the implementation
+
+  Key improvements:
+
+  1. We've removed the players_here array from BoardSpaceData, using the Player.position property instead
+  2. We've implemented an EventEmissionManager class for atomic operations
+  3. We've updated the SocketIO event handlers with well-organized, cleaner code using the atomic_event_handler decorator
+  4. We're using list comprehensions and proper error handling for better maintainability
+  5. The room_router.py implementation now integrates with the socket_events system for a unified approach
+  6. We've added tests to verify our implementation works correctly
 
 
