@@ -5,8 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
-from app.models.game_models import Room, RoomStatus, GameConfig
-from app.models.player import Player
+from app.models.game_models import Room, RoomStatus, GameConfig, Player
 from app.models.user import UserInDB
 from app.config import game_config
 from app.config.backend import DatabaseManager, USERS_COLLECTION

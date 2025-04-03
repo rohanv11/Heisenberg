@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Callable, Awaitable, Optional, Tuple, Union
 from functools import wraps
 
-from app.main import sio  # Import the sio instance from main.py
+from app.events import socket_manager
 from app.models.game_models import Room, RoomStatus, GameConfig, BoardCountry, Player
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class EventEmissionManager:
         """Emit all collected events."""
         try:
             for event, data, room in self.emissions:
-                await sio.emit(event, data, room=room)
+                await socket_manager.sio.emit(event, data, room=room)
             return True
         except Exception as e:
             logger.error(f"Error during atomic emit: {str(e)}")
@@ -69,7 +69,7 @@ def atomic_event_handler(func: Callable) -> Callable:
         except Exception as e:
             logger.error(f"Error in {func.__name__}: {str(e)}")
             # Emit error to client
-            await sio.emit('error', {'message': f'Operation failed: {str(e)}'}, room=sid)
+            await socket_manager.sio.emit('error', {'message': f'Operation failed: {str(e)}'}, room=sid)
             return None
             
     return wrapper
@@ -79,13 +79,13 @@ def atomic_event_handler(func: Callable) -> Callable:
 # Socket.IO Event Handlers
 # ----------------------------------------------------------------------
 
-@sio.on('connect')
+@socket_manager.sio.on('connect')
 async def connect(sid, environ):
     """Handle client connection."""
     logger.info(f"Client connected: {sid}")
-    await sio.emit('connection_success', {'message': 'Successfully connected to game server'}, room=sid)
+    await socket_manager.sio.emit('connection_success', {'message': 'Successfully connected to game server'}, room=sid)
 
-@sio.on('disconnect')
+@socket_manager.sio.on('disconnect')
 @atomic_event_handler
 async def disconnect(sid, _=None, emissions=None):
     """Handle client disconnection with atomic operations."""
@@ -119,7 +119,7 @@ async def disconnect(sid, _=None, emissions=None):
                 room.updated_at = datetime.now().isoformat()
                 break
 
-@sio.on('create_room')
+@socket_manager.sio.on('create_room')
 @atomic_event_handler
 async def create_room(sid, data=None, emissions=None):
     """
@@ -168,7 +168,7 @@ async def create_room(sid, data=None, emissions=None):
     rooms[room_id] = room
     
     # Join socket room
-    sio.enter_room(sid, room_id)
+    socket_manager.sio.enter_room(sid, room_id)
     
     # Prepare room data emission (will be sent atomically)
     room_data = room.model_dump()
@@ -180,7 +180,7 @@ async def create_room(sid, data=None, emissions=None):
     logger.info(f"Room created: {room_id} by player {sid}")
     return {'room_id': room_id}
 
-@sio.on('join_room')
+@socket_manager.sio.on('join_room')
 @atomic_event_handler
 async def join_room(sid, data, emissions=None):
     """
@@ -225,7 +225,7 @@ async def join_room(sid, data, emissions=None):
     room.updated_at = datetime.now().isoformat()
     
     # Join socket room
-    sio.enter_room(sid, room_id)
+    socket_manager.sio.enter_room(sid, room_id)
     
     # Prepare emissions (will be sent atomically)
     emissions.add_emission('player_joined', {
@@ -240,7 +240,7 @@ async def join_room(sid, data, emissions=None):
     
     logger.info(f"Player {sid} joined room {room_id}")
 
-@sio.on('leave_room')
+@socket_manager.sio.on('leave_room')
 @atomic_event_handler
 async def leave_room(sid, data, emissions=None):
     """
@@ -273,7 +273,7 @@ async def leave_room(sid, data, emissions=None):
     # Player position is tracked in the Player object itself
     
     # Leave socket room
-    sio.leave_room(sid, room_id)
+    socket_manager.sio.leave_room(sid, room_id)
     
     # If room is empty, remove it
     if not room.players:
@@ -304,7 +304,7 @@ async def leave_room(sid, data, emissions=None):
     
     logger.info(f"Player {sid} left room {room_id}")
 
-@sio.on('start_game')
+@socket_manager.sio.on('start_game')
 @atomic_event_handler
 async def start_game(sid, data, emissions=None):
     """
@@ -342,7 +342,7 @@ async def start_game(sid, data, emissions=None):
     
     logger.info(f"Game started in room {room_id}")
 
-@sio.on('move_player')
+@socket_manager.sio.on('move_player')
 @atomic_event_handler
 async def move_player(sid, data, emissions=None):
     """

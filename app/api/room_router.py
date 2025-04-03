@@ -8,7 +8,7 @@ import logging
 import uuid
 import random
 from datetime import datetime
-from app.main import sio
+from app.events import socket_manager
 
 from app.services.room_service import RoomServiceWithAuth
 from app.models.game_models import Room, RoomStatus, GameConfig, Player, BoardCountry
@@ -16,8 +16,6 @@ from app.models.user import UserInDB
 from app.models.exceptions import GameError
 from app.api.dependencies import get_current_user
 from app.utils.exception_handlers import handle_exceptions
-from app.services.board_service import BoardService
-from app.events.socket_events import rooms as socketio_rooms  # Use the rooms dict from socket_events
 
 
 router = APIRouter()
@@ -83,6 +81,8 @@ async def create_room(
         )
         
         # Store the room in memory (shared with socketio)
+        # Import here to avoid circular imports
+        from app.events.socket_events import rooms as socketio_rooms
         socketio_rooms[room_id] = room
         
         logger.info(f"Room created via API: {room_id} by user {current_user.google_id}")
@@ -117,6 +117,8 @@ async def list_rooms(
                 )
         
         # Get rooms from socket.io in-memory storage
+        # Import here to avoid circular imports
+        from app.events.socket_events import rooms as socketio_rooms
         socketio_room_list = list(socketio_rooms.values())
         if room_status:
             socketio_room_list = [room for room in socketio_room_list if room.status == room_status]
@@ -155,6 +157,8 @@ async def get_room(
         )
     
     # First check in-memory rooms
+    # Import here to avoid circular imports
+    from app.events.socket_events import rooms as socketio_rooms
     if room_id in socketio_rooms:
         return socketio_rooms[room_id]
     
@@ -184,6 +188,8 @@ async def join_room_api(
         )
     
     # First check in-memory rooms
+    # Import here to avoid circular imports
+    from app.events.socket_events import rooms as socketio_rooms
     if room_id in socketio_rooms:
         room = socketio_rooms[room_id]
         
@@ -222,7 +228,7 @@ async def join_room_api(
         room.updated_at = datetime.now().isoformat()
         
         # Notify all clients in the room about the new player
-        await sio.emit('player_joined', {
+        await socket_manager.sio.emit('player_joined', {
             'player': player.model_dump(),
             'message': f'{player.name} joined the room'
         }, room=room_id)
@@ -263,6 +269,8 @@ async def start_game(
         )
     
     # First check in-memory rooms
+    # Import here to avoid circular imports
+    from app.events.socket_events import rooms as socketio_rooms
     if room_id in socketio_rooms:
         room = socketio_rooms[room_id]
         
@@ -292,7 +300,7 @@ async def start_game(
         room.updated_at = datetime.now().isoformat()
         
         # Notify everyone in the room via socket.io
-        await sio.emit('game_started', {
+        await socket_manager.sio.emit('game_started', {
             'room': room.model_dump(),
             'message': 'Game has started!'
         }, room=room_id)
@@ -326,6 +334,8 @@ async def get_players(
         )
     
     # First check in-memory rooms
+    # Import here to avoid circular imports
+    from app.events.socket_events import rooms as socketio_rooms
     if room_id in socketio_rooms:
         room = socketio_rooms[room_id]
         return room.players

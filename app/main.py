@@ -1,18 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from fastapi_socketio import SocketManager
 
 from app.api.router import router as api_router
 from app.api.room_router import router as room_router
 from app.api.auth_router import router as auth_router
-from app.api.centrifugo_router import router as centrifugo_router
 from app.api.board_router import router as board_router
 from app.config.settings import DEBUG_MODE, DEBUG_PORT, SERVER_HOST, SERVER_PORT
 from app.utils.logging_config import configure_logging
 from app.utils.exception_handlers import register_exception_handlers
 from app.events.startup_shutdown import setup_debug_if_enabled
 from app.services.board_service import BoardService
+from app.events.socket_manager import init_socketio
 
 # Configure all application logging in one place
 configure_logging()
@@ -48,9 +47,10 @@ server_app.include_router(auth_router, prefix="/api")
 server_app.include_router(board_router, prefix="/api")
 
 # Initialize Socket.IO
-sio = SocketManager(app=server_app)
+init_socketio(server_app)
 
-# Import socket events to register them
+# Import socket events to register them AFTER sio is initialized
+# This must happen after sio is initialized
 from app.events import socket_events
 
 @server_app.get("/")
