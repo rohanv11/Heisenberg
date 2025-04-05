@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Dict, List, Any, Callable, Awaitable, Optional, Tuple, Union
 from functools import wraps
 
-from app.events import socket_manager
 from app.models.game_models import Room, RoomStatus, GameConfig, BoardCountry, Player
 
 logger = logging.getLogger(__name__)
@@ -30,11 +29,11 @@ class EventEmissionManager:
         """Add an emission to the transaction."""
         self.emissions.append((event, data, room))
         
-    async def emit_all(self):
+    async def emit_all(self, socketio_server):
         """Emit all collected events."""
         try:
             for event, data, room in self.emissions:
-                await socket_manager.sio.emit(event, data, room=room)
+                await socketio_server.emit(event, data, room=room)
             return True
         except Exception as e:
             logger.error(f"Error during atomic emit: {str(e)}")
@@ -50,351 +49,365 @@ class EventEmissionManager:
 # Decorator for atomic event handling and roomwide operations
 # ----------------------------------------------------------------------
 
-def atomic_event_handler(func: Callable) -> Callable:
+def make_atomic_event_handler(socketio_server):
     """
-    Decorator to ensure atomic event handling for socket.io events.
-    If an exception occurs, proper error handling is done and client is notified.
+    Create an atomic event handler decorator for a specific socketio server
     """
-    @wraps(func)
-    async def wrapper(sid: str, data: Any = None):
-        emissions = EventEmissionManager()
-        
-        try:
-            # Run the event handler with the emission manager
-            result = await func(sid, data, emissions)
+    def atomic_event_handler(func: Callable) -> Callable:
+        """
+        Decorator to ensure atomic event handling for socket.io events.
+        If an exception occurs, proper error handling is done and client is notified.
+        """
+        @wraps(func)
+        async def wrapper(sid: str, data: Any = None):
+            emissions = EventEmissionManager()
             
-            # Emit all collected events
-            await emissions.emit_all()
-            return result
-        except Exception as e:
-            logger.error(f"Error in {func.__name__}: {str(e)}")
-            # Emit error to client
-            await socket_manager.sio.emit('error', {'message': f'Operation failed: {str(e)}'}, room=sid)
-            return None
-            
-    return wrapper
+            try:
+                # Run the event handler with the emission manager
+                result = await func(sid, data, emissions)
+                
+                # Emit all collected events
+                await emissions.emit_all(socketio_server)
+                return result
+            except Exception as e:
+                logger.error(f"Error in {func.__name__}: {str(e)}")
+                # Emit error to client
+                await socketio_server.emit('error', {'message': f'Operation failed: {str(e)}'}, room=sid)
+                return None
+                
+        return wrapper
+    return atomic_event_handler
 
 
 # ----------------------------------------------------------------------
 # Socket.IO Event Handlers
 # ----------------------------------------------------------------------
 
-@socket_manager.sio.on('connect')
-async def connect(sid, environ):
-    """Handle client connection."""
-    logger.info(f"Client connected: {sid}")
-    await socket_manager.sio.emit('connection_success', {'message': 'Successfully connected to game server'}, room=sid)
-
-@socket_manager.sio.on('disconnect')
-@atomic_event_handler
-async def disconnect(sid, _=None, emissions=None):
-    """Handle client disconnection with atomic operations."""
-    logger.info(f"Client disconnected: {sid}")
+def register_handlers(socketio_server):
+    """Register all event handlers with the Socket.IO server
+    This function should be called explicitly after initializing the server
+    """
+    # Create atomic event handler decorator for this specific server
+    atomic_event_handler = make_atomic_event_handler(socketio_server)
     
-    # Find rooms where this player is and handle their departure
-    for room_id, room in list(rooms.items()):
-        for player in list(room.players):
-            if player.player_id == sid:
-                # Remove player from room
-                room.players = [p for p in room.players if p.player_id != sid]
-                
-                # No need to update board spaces anymore
-                # Player position is tracked in the Player object itself
-                
-                # Prepare emissions (will be sent atomically)
-                emissions.add_emission('player_left', {'player_id': sid}, room=room_id)
-                
-                # If room is empty, remove it
-                if not room.players:
-                    del rooms[room_id]
-                    logger.info(f"Room {room_id} removed (empty)")
-                # If host left, assign a new host
-                elif room.host_player_id == sid and room.players:
-                    room.host_player_id = room.players[0].player_id
-                    emissions.add_emission('host_changed', {
-                        'new_host_id': room.host_player_id
-                    }, room=room_id)
-                
-                # Update timestamp
-                room.updated_at = datetime.now().isoformat()
-                break
+    @socketio_server.on('connect')
+    async def connect(sid, environ):
+        """Handle client connection."""
+        logger.info(f"Client connected: {sid}")
+        await socketio_server.emit('connection_success', {'message': 'Successfully connected to game server'}, room=sid)
 
-@socket_manager.sio.on('create_room')
-@atomic_event_handler
-async def create_room(sid, data=None, emissions=None):
-    """
-    Handle room creation with default settings.
-    - Default IN board
-    - Max players: 4
-    - Default game configuration
-    """
-    if not data:
-        data = {}
+    @socketio_server.on('disconnect')
+    @atomic_event_handler
+    async def disconnect(sid, _=None, emissions=None):
+        """Handle client disconnection with atomic operations."""
+        logger.info(f"Client disconnected: {sid}")
         
-    # Use player name from data if provided, otherwise use generic name
-    player_name = data.get('player_name', f"Player_{sid[:6]}")
-    
-    # Generate a 6-digit numeric room ID
-    room_id = str(random.randint(100000, 999999))
-    
-    # Create default game config
-    config = GameConfig(
-        board_country=BoardCountry.IN,
-        max_players=4
-    )
-    
-    # Create a player with cash from config
-    player = Player(
-        player_id=sid,
-        name=player_name,
-        cash=config.starting_cash
-    )
-    
-    # Create room with current timestamp
-    now = datetime.now().isoformat()
-    room = Room(
-        room_id=room_id,
-        status=RoomStatus.WAITING,
-        config=config,
-        players=[player],
-        host_player_id=sid,
-        created_at=now,
-        updated_at=now
-    )
-    
-    # Player's initial position is already set to 0 in the Player model
-    
-    # Store the room in memory
-    rooms[room_id] = room
-    
-    # Join socket room
-    socket_manager.sio.enter_room(sid, room_id)
-    
-    # Prepare room data emission (will be sent atomically)
-    room_data = room.model_dump()
-    emissions.add_emission('room_created', {
-        'room': room_data,
-        'message': f'Room created with ID: {room_id}'
-    }, room=sid)
-    
-    logger.info(f"Room created: {room_id} by player {sid}")
-    return {'room_id': room_id}
+        # Find rooms where this player is and handle their departure
+        for room_id, room in list(rooms.items()):
+            for player in list(room.players):
+                if player.player_id == sid:
+                    # Remove player from room
+                    room.players = [p for p in room.players if p.player_id != sid]
+                    
+                    # No need to update board spaces anymore
+                    # Player position is tracked in the Player object itself
+                    
+                    # Prepare emissions (will be sent atomically)
+                    emissions.add_emission('player_left', {'player_id': sid}, room=room_id)
+                    
+                    # If room is empty, remove it
+                    if not room.players:
+                        del rooms[room_id]
+                        logger.info(f"Room {room_id} removed (empty)")
+                    # If host left, assign a new host
+                    elif room.host_player_id == sid and room.players:
+                        room.host_player_id = room.players[0].player_id
+                        emissions.add_emission('host_changed', {
+                            'new_host_id': room.host_player_id
+                        }, room=room_id)
+                    
+                    # Update timestamp
+                    room.updated_at = datetime.now().isoformat()
+                    break
 
-@socket_manager.sio.on('join_room')
-@atomic_event_handler
-async def join_room(sid, data, emissions=None):
-    """
-    Handle a player joining a room with atomic operations.
-    """
-    room_id = data.get('room_id')
-    player_name = data.get('player_name', f"Player_{sid[:6]}")
-    
-    if not room_id:
-        raise ValueError('Room ID is required')
-    
-    if room_id not in rooms:
-        raise ValueError('Room not found')
-    
-    room = rooms[room_id]
-    
-    # Check if the room is waiting for players
-    if room.status != RoomStatus.WAITING:
-        raise ValueError('Game has already started')
-    
-    # Check if the room is full
-    if len(room.players) >= room.config.max_players:
-        raise ValueError('Room is full')
-    
-    # Check if player is already in the room
-    if any(player.player_id == sid for player in room.players):
-        raise ValueError('You are already in this room')
-    
-    # Create a new player with cash from room config
-    player = Player(
-        player_id=sid,
-        name=player_name,
-        cash=room.config.starting_cash
-    )
-    
-    # Add player to the room
-    room.players.append(player)
-    
-    # Player's initial position is already set to 0 in the Player model
-    
-    # Update timestamp
-    room.updated_at = datetime.now().isoformat()
-    
-    # Join socket room
-    socket_manager.sio.enter_room(sid, room_id)
-    
-    # Prepare emissions (will be sent atomically)
-    emissions.add_emission('player_joined', {
-        'player': player.model_dump(),
-        'message': f'{player_name} joined the room'
-    }, room=room_id)
-    
-    emissions.add_emission('room_joined', {
-        'room': room.model_dump(),
-        'message': f'You joined room {room_id}'
-    }, room=sid)
-    
-    logger.info(f"Player {sid} joined room {room_id}")
-
-@socket_manager.sio.on('leave_room')
-@atomic_event_handler
-async def leave_room(sid, data, emissions=None):
-    """
-    Handle a player leaving a room with atomic operations.
-    """
-    room_id = data.get('room_id')
-    
-    if not room_id or room_id not in rooms:
-        raise ValueError('Room not found')
-    
-    room = rooms[room_id]
-    
-    # Check if player is in the room
-    player_index = None
-    player_name = "Unknown player"
-    
-    for i, player in enumerate(room.players):
-        if player.player_id == sid:
-            player_index = i
-            player_name = player.name
-            break
+    @socketio_server.on('create_room')
+    @atomic_event_handler
+    async def create_room(sid, data=None, emissions=None):
+        """
+        Handle room creation with default settings.
+        - Default IN board
+        - Max players: 4
+        - Default game configuration
+        """
+        if not data:
+            data = {}
             
-    if player_index is None:
-        raise ValueError('You are not in this room')
-    
-    # Remove player from the room
-    room.players.pop(player_index)
-    
-    # No need to update board spaces anymore
-    # Player position is tracked in the Player object itself
-    
-    # Leave socket room
-    socket_manager.sio.leave_room(sid, room_id)
-    
-    # If room is empty, remove it
-    if not room.players:
-        del rooms[room_id]
-        logger.info(f"Room {room_id} removed (empty)")
-        emissions.add_emission('room_left', {'message': f'You left room {room_id}'}, room=sid)
-        return
-    
-    # If this was the host, assign a new host
-    if room.host_player_id == sid:
-        room.host_player_id = room.players[0].player_id
-        emissions.add_emission('host_changed', {
-            'new_host_id': room.host_player_id,
-            'new_host_name': room.players[0].name
+        # Use player name from data if provided, otherwise use generic name
+        player_name = data.get('player_name', f"Player_{sid[:6]}")
+        
+        # Generate a 6-digit numeric room ID
+        room_id = str(random.randint(100000, 999999))
+        
+        # Create default game config
+        config = GameConfig(
+            board_country=BoardCountry.IN,
+            max_players=4
+        )
+        
+        # Create a player with cash from config
+        player = Player(
+            player_id=sid,
+            name=player_name,
+            cash=config.starting_cash
+        )
+        
+        # Create room with current timestamp
+        now = datetime.now().isoformat()
+        room = Room(
+            room_id=room_id,
+            status=RoomStatus.WAITING,
+            config=config,
+            players=[player],
+            host_player_id=sid,
+            created_at=now,
+            updated_at=now
+        )
+        
+        # Player's initial position is already set to 0 in the Player model
+        
+        # Store the room in memory
+        rooms[room_id] = room
+        
+        # Join socket room
+        socketio_server.enter_room(sid, room_id)
+        
+        # Prepare room data emission (will be sent atomically)
+        room_data = room.model_dump()
+        emissions.add_emission('room_created', {
+            'room': room_data,
+            'message': f'Room created with ID: {room_id}'
+        }, room=sid)
+        
+        logger.info(f"Room created: {room_id} by player {sid}")
+        return {'room_id': room_id}
+
+    @socketio_server.on('join_room')
+    @atomic_event_handler
+    async def join_room(sid, data, emissions=None):
+        """
+        Handle a player joining a room with atomic operations.
+        """
+        room_id = data.get('room_id')
+        player_name = data.get('player_name', f"Player_{sid[:6]}")
+        
+        if not room_id:
+            raise ValueError('Room ID is required')
+        
+        if room_id not in rooms:
+            raise ValueError('Room not found')
+        
+        room = rooms[room_id]
+        
+        # Check if the room is waiting for players
+        if room.status != RoomStatus.WAITING:
+            raise ValueError('Game has already started')
+        
+        # Check if the room is full
+        if len(room.players) >= room.config.max_players:
+            raise ValueError('Room is full')
+        
+        # Check if player is already in the room
+        if any(player.player_id == sid for player in room.players):
+            raise ValueError('You are already in this room')
+        
+        # Create a new player with cash from room config
+        player = Player(
+            player_id=sid,
+            name=player_name,
+            cash=room.config.starting_cash
+        )
+        
+        # Add player to the room
+        room.players.append(player)
+        
+        # Player's initial position is already set to 0 in the Player model
+        
+        # Update timestamp
+        room.updated_at = datetime.now().isoformat()
+        
+        # Join socket room
+        socketio_server.enter_room(sid, room_id)
+        
+        # Prepare emissions (will be sent atomically)
+        emissions.add_emission('player_joined', {
+            'player': player.model_dump(),
+            'message': f'{player_name} joined the room'
         }, room=room_id)
-    
-    # Update room timestamp
-    room.updated_at = datetime.now().isoformat()
-    
-    # Prepare emissions (will be sent atomically)
-    emissions.add_emission('player_left', {
-        'player_id': sid,
-        'player_name': player_name,
-        'message': f'{player_name} left the room'
-    }, room=room_id)
-    
-    emissions.add_emission('room_left', {'message': f'You left room {room_id}'}, room=sid)
-    
-    logger.info(f"Player {sid} left room {room_id}")
+        
+        emissions.add_emission('room_joined', {
+            'room': room.model_dump(),
+            'message': f'You joined room {room_id}'
+        }, room=sid)
+        
+        logger.info(f"Player {sid} joined room {room_id}")
 
-@socket_manager.sio.on('start_game')
-@atomic_event_handler
-async def start_game(sid, data, emissions=None):
-    """
-    Start the game in a room with atomic operations.
-    Only the host can start the game.
-    """
-    room_id = data.get('room_id')
-    
-    if not room_id or room_id not in rooms:
-        raise ValueError('Room not found')
-    
-    room = rooms[room_id]
-    
-    # Check if player is the host
-    if room.host_player_id != sid:
-        raise ValueError('Only the host can start the game')
-    
-    # Check if enough players
-    if len(room.players) < 2:
-        raise ValueError('Need at least 2 players to start')
-    
-    # Check if game already started
-    if room.status != RoomStatus.WAITING:
-        raise ValueError('Game has already started')
-    
-    # Update room status
-    room.status = RoomStatus.PLAYING
-    room.updated_at = datetime.now().isoformat()
-    
-    # Prepare emission (will be sent atomically)
-    emissions.add_emission('game_started', {
-        'room': room.model_dump(),
-        'message': 'Game has started!'
-    }, room=room_id)
-    
-    logger.info(f"Game started in room {room_id}")
+    @socketio_server.on('leave_room')
+    @atomic_event_handler
+    async def leave_room(sid, data, emissions=None):
+        """
+        Handle a player leaving a room with atomic operations.
+        """
+        room_id = data.get('room_id')
+        
+        if not room_id or room_id not in rooms:
+            raise ValueError('Room not found')
+        
+        room = rooms[room_id]
+        
+        # Check if player is in the room
+        player_index = None
+        player_name = "Unknown player"
+        
+        for i, player in enumerate(room.players):
+            if player.player_id == sid:
+                player_index = i
+                player_name = player.name
+                break
+                
+        if player_index is None:
+            raise ValueError('You are not in this room')
+        
+        # Remove player from the room
+        room.players.pop(player_index)
+        
+        # No need to update board spaces anymore
+        # Player position is tracked in the Player object itself
+        
+        # Leave socket room
+        socketio_server.leave_room(sid, room_id)
+        
+        # If room is empty, remove it
+        if not room.players:
+            del rooms[room_id]
+            logger.info(f"Room {room_id} removed (empty)")
+            emissions.add_emission('room_left', {'message': f'You left room {room_id}'}, room=sid)
+            return
+        
+        # If this was the host, assign a new host
+        if room.host_player_id == sid:
+            room.host_player_id = room.players[0].player_id
+            emissions.add_emission('host_changed', {
+                'new_host_id': room.host_player_id,
+                'new_host_name': room.players[0].name
+            }, room=room_id)
+        
+        # Update room timestamp
+        room.updated_at = datetime.now().isoformat()
+        
+        # Prepare emissions (will be sent atomically)
+        emissions.add_emission('player_left', {
+            'player_id': sid,
+            'player_name': player_name,
+            'message': f'{player_name} left the room'
+        }, room=room_id)
+        
+        emissions.add_emission('room_left', {'message': f'You left room {room_id}'}, room=sid)
+        
+        logger.info(f"Player {sid} left room {room_id}")
 
-@socket_manager.sio.on('move_player')
-@atomic_event_handler
-async def move_player(sid, data, emissions=None):
-    """
-    Move a player based on dice roll from client.
-    """
-    room_id = data.get('room_id')
-    dice_total = data.get('dice_total')
-    
-    if not room_id or room_id not in rooms:
-        raise ValueError('Room not found')
-    
-    if not isinstance(dice_total, int) or dice_total < 2 or dice_total > 12:
-        raise ValueError('Invalid dice total')
-    
-    room = rooms[room_id]
-    
-    # Check if game is in progress
-    if room.status != RoomStatus.PLAYING:
-        raise ValueError('Game has not started yet')
-    
-    # Find the player
-    player = None
-    for p in room.players:
-        if p.player_id == sid:
-            player = p
-            break
-    
-    if not player:
-        raise ValueError('You are not in this room')
-    
-    # Move player
-    old_position = player.position
-    # Calculate new position using board length
-    board_length = len(room.board_data.root) if room.board_data else 40
-    player.position = (player.position + dice_total) % board_length
-    
-    # Update room timestamp
-    room.updated_at = datetime.now().isoformat()
-    
-    # Prepare emissions
-    emissions.add_emission('player_moved', {
-        'player_id': sid,
-        'player_name': player.name,
-        'dice_total': dice_total,
-        'old_position': old_position,
-        'new_position': player.position
-    }, room=room_id)
-    
-    # Also send the updated room state
-    emissions.add_emission('room_updated', {
-        'room': room.model_dump()
-    }, room=room_id)
-    
-    logger.info(f"Player {sid} moved {dice_total} spaces in room {room_id}")
+    @socketio_server.on('start_game')
+    @atomic_event_handler
+    async def start_game(sid, data, emissions=None):
+        """
+        Start the game in a room with atomic operations.
+        Only the host can start the game.
+        """
+        room_id = data.get('room_id')
+        
+        if not room_id or room_id not in rooms:
+            raise ValueError('Room not found')
+        
+        room = rooms[room_id]
+        
+        # Check if player is the host
+        if room.host_player_id != sid:
+            raise ValueError('Only the host can start the game')
+        
+        # Check if enough players
+        if len(room.players) < 2:
+            raise ValueError('Need at least 2 players to start')
+        
+        # Check if game already started
+        if room.status != RoomStatus.WAITING:
+            raise ValueError('Game has already started')
+        
+        # Update room status
+        room.status = RoomStatus.PLAYING
+        room.updated_at = datetime.now().isoformat()
+        
+        # Prepare emission (will be sent atomically)
+        emissions.add_emission('game_started', {
+            'room': room.model_dump(),
+            'message': 'Game has started!'
+        }, room=room_id)
+        
+        logger.info(f"Game started in room {room_id}")
 
+    @socketio_server.on('move_player')
+    @atomic_event_handler
+    async def move_player(sid, data, emissions=None):
+        """
+        Move a player based on dice roll from client.
+        """
+        room_id = data.get('room_id')
+        dice_total = data.get('dice_total')
+        
+        if not room_id or room_id not in rooms:
+            raise ValueError('Room not found')
+        
+        if not isinstance(dice_total, int) or dice_total < 2 or dice_total > 12:
+            raise ValueError('Invalid dice total')
+        
+        room = rooms[room_id]
+        
+        # Check if game is in progress
+        if room.status != RoomStatus.PLAYING:
+            raise ValueError('Game has not started yet')
+        
+        # Find the player
+        player = None
+        for p in room.players:
+            if p.player_id == sid:
+                player = p
+                break
+        
+        if not player:
+            raise ValueError('You are not in this room')
+        
+        # Move player
+        old_position = player.position
+        # Calculate new position using board length
+        board_length = len(room.board_data.root) if room.board_data else 40
+        player.position = (player.position + dice_total) % board_length
+        
+        # Update room timestamp
+        room.updated_at = datetime.now().isoformat()
+        
+        # Prepare emissions
+        emissions.add_emission('player_moved', {
+            'player_id': sid,
+            'player_name': player.name,
+            'dice_total': dice_total,
+            'old_position': old_position,
+            'new_position': player.position
+        }, room=room_id)
+        
+        # Also send the updated room state
+        emissions.add_emission('room_updated', {
+            'room': room.model_dump()
+        }, room=room_id)
+        
+        logger.info(f"Player {sid} moved {dice_total} spaces in room {room_id}")
+
+    # Return the registered handlers
+    return socketio_server

@@ -18,5 +18,13 @@ COPY ./ ./
 # Expose the port
 EXPOSE 8000
 
-# Start the application
-CMD ["uvicorn", "app.main:server_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Set default environment variables for production (safer defaults)
+ENV DEBUG_MODE=False
+ENV HOT_RELOAD=False
+
+# Start the application - using shell script to conditionally enable hot reload
+CMD sh -c "if [ \"$HOT_RELOAD\" = \"true\" ]; then \
+  uvicorn app.main:server_app --host 0.0.0.0 --port 8000 --reload; \
+else \
+  uvicorn app.main:server_app --host 0.0.0.0 --port 8000; \
+fi"

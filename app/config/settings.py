@@ -14,6 +14,7 @@ IS_TESTING = ENV == "testing"
 
 # Common Settings
 DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() in ("true", "1", "t")
+HOT_RELOAD = os.getenv("HOT_RELOAD", "False").lower() in ("true", "1", "t")
 API_PREFIX = "/api"
 
 # Debugging Settings

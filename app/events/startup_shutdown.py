@@ -6,6 +6,7 @@ async def startup_db_client():
     await DatabaseManager.connect_to_mongo()
 
 async def setup_debug_if_enabled():
+    print("reached debugger enabling")
     if DEBUG_MODE:
         print("DEBUG_MODE is True")
         setup_debugger()

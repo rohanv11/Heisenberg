@@ -11,7 +11,7 @@ from app.utils.logging_config import configure_logging
 from app.utils.exception_handlers import register_exception_handlers
 from app.events.startup_shutdown import setup_debug_if_enabled
 from app.services.board_service import BoardService
-from app.events.socket_manager import init_socketio
+from app.events.socket_manager import create_socketio_app
 
 # Configure all application logging in one place
 configure_logging()
@@ -46,12 +46,11 @@ server_app.include_router(room_router, prefix="/api")
 server_app.include_router(auth_router, prefix="/api")
 server_app.include_router(board_router, prefix="/api")
 
-# Initialize Socket.IO
-init_socketio(server_app)
-
-# Import socket events to register them AFTER sio is initialized
-# This must happen after sio is initialized
-from app.events import socket_events
+# Initialize and mount the Socket.IO app to the FastAPI app
+# This creates a WebSocket endpoint at /ws path
+print("33333333")
+server_app.mount("/ws", create_socketio_app())
+print("44444444")
 
 @server_app.get("/")
 async def root():
@@ -65,24 +64,16 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
+@server_app.on_event("startup")
 async def startup_event():
     # Load board data on startup
+    print("Running startup events...")
     BoardService.load_boards()
     await setup_debug_if_enabled()
 
 # Register startup and shutdown events
-server_app.add_event_handler("startup", startup_event)
 # server_app.add_event_handler("shutdown", shutdown_db_client)
 
-if __name__ == "__main__":
-    # This allows running the app directly with python app/main.py
-    # Useful for debugging and development outside of Docker
-    import uvicorn
-    from app.config.settings import UVICORN_LOG_LEVEL
-    
-    uvicorn.run(
-        "app.main:server_app",
-        host=SERVER_HOST,
-        port=SERVER_PORT,
-        reload=DEBUG_MODE
-    )
+# Note: The server is started by the Dockerfile CMD command
+# This avoids having two different ways to start the server
+print("7777n7s s  qwdnoiuwqb")

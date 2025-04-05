@@ -1,0 +1,6 @@
+- Industry standard approach
+- Better performance and reliability
+- Cleaner architecture
+- Use appropriate Design patterns wherever it is necessary and do use SOLID principles as coding guidelines.
+- Ask if you have any questions, dont implement stuff with half information
+- Prioritize clean, maintable and efficient code.

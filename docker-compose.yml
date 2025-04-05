@@ -10,13 +10,13 @@ services:
       - "5678:5678"  # Remote debugger port
     volumes:
       - .:/usr/src
-    entrypoint: ["python", "-m"]
-    command: ["app.main"]
+    # Let the CMD in Dockerfile handle the server startup
+    # This will use uvicorn to keep the server running
     environment:
       - ENV=development
       - DEBUG_PORT=5678
       - DEBUG_MODE=${DEBUG_MODE:-false}  # Enable/disable remote debugging
-      - MONGO_URI=mongodb://mongodb:27017/heisenberg
+      - HOT_RELOAD=${HOT_RELOAD:-false}   # Enable hot reload for development
       - POSTGRES_USER=your_user
       - POSTGRES_PASSWORD=your_password
       - POSTGRES_DB=heisenberg
