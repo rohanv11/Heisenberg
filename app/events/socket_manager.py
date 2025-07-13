@@ -22,7 +22,6 @@ def create_socketio_app():
     logger.info("SocketIO server initialized")
     
     # Import and register socket event handlers
-    # Import here to avoid circular imports
     from app.events.socket_events import register_handlers
     register_handlers(sio)
     logger.info("Socket.IO event handlers registered")

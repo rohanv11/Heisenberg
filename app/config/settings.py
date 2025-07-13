@@ -41,7 +41,7 @@ UVICORN_LOG_LEVEL = os.getenv("UVICORN_LOG_LEVEL", "info").lower()  # Uvicorn/Fa
 
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "dummy_secret")
 OAUTH_REDIRECT_URL = os.getenv("OAUTH_REDIRECT_URL", "http://localhost:8000/api/auth/callback")
 
 # JWT Config

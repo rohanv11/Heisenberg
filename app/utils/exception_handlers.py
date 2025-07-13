@@ -2,99 +2,71 @@
 Utility functions for handling exceptions in API routes.
 """
 import logging
-import functools
-from fastapi import FastAPI, Request, HTTPException, status
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
 from app.models.exceptions import GameError
 
 logger = logging.getLogger(__name__)
 
 
-def handle_exceptions(func):
-    """
-    Decorator for handling exceptions in route handlers.
-    
-    This decorator:
-    1. Catches all exceptions
-    2. Re-raises HTTPException and GameError (which extends HTTPException)
-    3. Logs unexpected exceptions
-    4. Returns a consistent error response for unexpected exceptions
-    
-    Usage:
-        @router.get("/endpoint")
-        @handle_exceptions
-        async def my_endpoint():
-            # Your code here
-    """
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except (HTTPException, GameError):
-            # Re-raise HTTP exceptions and GameError to maintain their status codes
-            raise
-        except Exception as e:
-            # Log the exception
-            logger.exception(f"Unhandled error in {func.__name__}: {str(e)}")
-            
-            # Return a consistent error response without exposing implementation details
-            return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"detail": "An internal server error occurred"}
-            )
-    return wrapper
+class ErrorResponse(BaseModel):
+    """Standard model for API error responses."""
+    detail: str
+    errors: Optional[List[str]] = Field(None, description="A list of specific validation errors.")
 
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Handle HTTP exceptions globally with consistent format"""
+    """Handle HTTP exceptions globally with a consistent format."""
     logger.warning(f"HTTP exception: {exc.detail} (status_code={exc.status_code})")
+    error_content = ErrorResponse(detail=exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail}
+        content=error_content.model_dump(exclude_none=True)
     )
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Handle validation errors with user-friendly format"""
+    """Handle Pydantic validation errors with a user-friendly format."""
     errors = []
     for error in exc.errors():
-        location = error.get("loc", [])
-        if len(location) > 0 and location[0] == "body":
-            field = ".".join([str(loc) for loc in location[1:]])
-            errors.append(f"Field '{field}': {error.get('msg')}")
-        else:
-            errors.append(error.get("msg"))
+        location = ".".join(map(str, error.get("loc", [])))
+        errors.append(f"Field '{location}': {error.get('msg')}")
             
     logger.warning(f"Validation error: {errors}")
+    error_content = ErrorResponse(detail="Validation error", errors=errors)
     return JSONResponse(
-        status_code=422,
-        content={"detail": "Validation error", "errors": errors}
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=error_content.model_dump(exclude_none=True)
     )
 
 
 async def game_exception_handler(request: Request, exc: GameError):
-    """Handle game-specific exceptions"""
+    """Handle game-specific exceptions."""
     logger.warning(f"Game error: {exc.detail} (status_code={exc.status_code})")
+    error_content = ErrorResponse(detail=exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail}
+        content=error_content.model_dump(exclude_none=True)
     )
 
 
 async def generic_exception_handler(request: Request, exc: Exception):
-    """Catch-all for any unhandled exceptions to prevent 500 errors with stack traces"""
+    """Catch-all for any unhandled exceptions to prevent exposing stack traces."""
     logger.exception(f"Unhandled exception: {str(exc)}")
+    error_content = ErrorResponse(detail="An internal server error occurred")
     return JSONResponse(
-        status_code=500,
-        content={"detail": "An internal server error occurred"}
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=error_content.model_dump(exclude_none=True)
     )
 
 
 def register_exception_handlers(app: FastAPI):
-    """Register all exception handlers to an application"""
+    """Register all exception handlers for the application."""
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(GameError, game_exception_handler)

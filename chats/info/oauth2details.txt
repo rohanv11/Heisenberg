@@ -1,0 +1,331 @@
+✦ Of course. I'll break down how Google OAuth 2.0 works, how it's implemented in this repository, and how you can test it on your local machine.
+
+  1. How Google OAuth 2.0 Works (In Detail)
+
+  OAuth 2.0 is an authorization framework. It's a standard that allows a user to grant a third-party application (like this one) limited access to
+  their resources on another service (like Google), without sharing their password.
+
+  Think of it like a hotel key card system:
+
+   * You (The User): You are the guest.
+   * Your Google Account: This is the hotel you're registered with. It holds your identity and private information (your room).
+   * This Application (Heisenberg): This is a third-party service, like a temporary cleaning service, that wants to confirm your identity with the
+     hotel.
+   * Google's Login Page: This is the hotel's front desk.
+
+  The process, often called the "OAuth Dance," goes like this:
+
+   1. The Request (User wants to log in): You click "Login with Google" in the Heisenberg app. The app doesn't ask for your Google password. Instead,
+      it says, "I need to confirm your identity. Please go to the hotel's front desk (Google) and get a key card (an access token) that proves who you
+      are."
+
+   2. Redirection to the Authorization Server: The Heisenberg app redirects your browser to a special Google URL. This URL is carefully crafted and
+      includes:
+       * client_id: Publicly identifies the Heisenberg app to Google.
+       * redirect_uri: Tells Google where to send you back after you've logged in. This is a critical security measure; Google will only redirect to
+         pre-approved URLs.
+       * scope: Specifies exactly what permissions the app is requesting (e.g., email, profile). This is like asking for a key card that only opens
+         your room door, not the hotel safe.
+       * response_type=code: Tells Google that the app wants a temporary, one-time-use "authorization code."
+
+   3. User Authentication & Consent: You are now at Google's "front desk."
+       * You enter your Google username and password directly on Google's site. The Heisenberg app never sees your credentials.
+       * Google shows you a "consent screen" that says, "The Heisenberg app wants to view your email address and basic profile information. Do you
+         approve?"
+       * You click "Allow."
+
+   4. Google Provides an Authorization Code: Google now trusts that you are you, and that you've given consent. It redirects your browser back to the
+      redirect_uri specified in step 2. Appended to this URL is the temporary code, for example: https://myapp.com/callback?code=A1B2C3D4E5F6.
+
+   5. The App Exchanges the Code for a Token: This is the crucial backend step.
+       * The Heisenberg backend receives this request and extracts the code.
+       * The backend then makes a direct, secure, server-to-server call to Google. This request includes the code it just received, its client_id, and
+         its client_secret.
+       * The client_secret is a private key that only the Heisenberg app and Google know. This proves to Google that the request is coming from the
+         legitimate application and not an imposter.
+
+   6. Google Provides the Access Token: Google validates the code, client_id, and client_secret. If everything matches, it responds with an Access
+      Token. This token is the "key card." It's a long string of characters that grants the Heisenberg app the permissions you approved in the
+      specified scope.
+
+   7. The App Uses the Token: The Heisenberg backend can now use this Access Token to make API calls to Google on your behalf (e.g., to fetch your
+      name and email from your profile). It includes the token in the Authorization header of its requests to Google's APIs.
+
+  2. How It's Implemented in This Repository
+
+  Now let's map the theory to the code you have:
+
+   1. Initiating Login (`/api/auth/login`):
+       * When the frontend needs to log a user in, it calls this endpoint.
+       * auth_router.py: The login function is triggered. It depends on get_auth_service.
+       * auth_service.py: The get_authorization_url() method is called. It uses the httpx-oauth library to construct the special Google URL with the
+         correct client_id, redirect_uri, and scope. This URL is sent back to the frontend.
+       * The frontend then redirects the user to this Google URL.
+
+   2. Handling the Callback (`/api/auth/callback`):
+       * After you log in and consent on Google's site, Google redirects you to this endpoint with the code in the URL parameters.
+       * auth_router.py: The auth_callback function receives the code.
+       * auth_service.py: It calls authenticate_user(code). Inside this method:
+           * self.exchange_code(code) makes the secure, server-to-server call to Google, sending the code, client_id, and client_secret to get an
+             access token.
+           * self.get_user_info(token) uses that access token to fetch your profile details (name, email, Google ID) from Google's API.
+       * User Management (`UserRepository`):
+           * The service now has your Google details. It uses user_repository.get_user_by_google_id() to check if you exist in the application's own
+             database.
+           * If you exist: It updates your name and last login time (update_user_login).
+           * If you are a new user: It creates a new user record in the database (create_user_from_google).
+       * Creating a Local JWT: The application does not give the frontend the Google Access Token. Instead, it creates its own session token (a JWT) by
+         calling create_access_token(). This JWT contains your google_id.
+       * This application JWT is returned to the frontend. For all future requests to the Heisenberg API (like /api/auth/me), the frontend will send
+         this JWT to authenticate you with the application's own backend.
+
+  3. How to Test Google Auth Locally
+
+  To make this work on your machine, you need to register your local development environment as a valid "app" with Google.
+
+  Step 1: Configure Google Cloud Project
+
+   1. Go to the Google Cloud Console (https://console.cloud.google.com/).
+   2. Create a new project (e.g., "Heisenberg-Dev").
+   3. In the sidebar, go to APIs & Services -> OAuth consent screen.
+       * Choose External and click Create.
+       * Fill in the required fields: App name ("Heisenberg Dev"), User support email (your email), and developer contact information (your email).
+         Click Save and Continue.
+       * On the Scopes page, click Add or Remove Scopes. Find and add the scopes for .../auth/userinfo.email and .../auth/userinfo.profile. Click
+         Update, then Save and Continue.
+       * On the Test users page, add the Google account(s) you want to test the login with. Click Save and Continue.
+
+  Step 2: Create OAuth 2.0 Credentials
+
+   1. In the sidebar, go to APIs & Services -> Credentials.
+   2. Click + Create Credentials and select OAuth client ID.
+   3. For Application type, select Web application.
+   4. Give it a name, like "Heisenberg Web Client".
+   5. Under Authorized redirect URIs, click + ADD URI. This is the most important step. You must enter the exact URL that your local server will be
+      running. Based on your project, this will be:
+       * http://127.0.0.1:8000/api/auth/callback
+   6. Click Create. A window will pop up with your Client ID and Client Secret. Keep these safe.
+
+  Step 3: Configure Your Local Application
+
+   1. In your project's root directory, create a file named .env (you can copy .env.example to get the structure).
+   2. Open the .env file and add/edit the following variables, pasting the values you got from the Google Cloud Console:
+
+   1     GOOGLE_CLIENT_ID="YOUR_CLIENT_ID_FROM_GOOGLE"
+   2     GOOGLE_CLIENT_SECRET="YOUR_CLIENT_SECRET_FROM_GOOGLE"
+   3     OAUTH_REDIRECT_URL="http://127.0.0.1:8000/api/auth/callback"
+      It is critical that `OAUTH_REDIRECT_URL` here exactly matches the one you entered in the Google Cloud Console.
+
+  Step 4: Run and Test
+
+   1. Start your application using docker-compose up --build or the appropriate command.
+   2. Open your web browser (I recommend using a private/incognito window to ensure you're not already logged in).
+   3. Navigate to http://127.0.0.1:8000/api/auth/login.
+   4. You should see a JSON response with a login_url. Copy this entire URL.
+   5. Paste the URL into your browser's address bar and hit Enter.
+   6. You will be taken to the Google login screen. Log in with one of the test accounts you specified.
+   7. You will see the consent screen asking for permission. Click Allow.
+   8. Google will redirect you back to your http://127.0.0.1:8000/api/auth/callback URL. If everything is configured correctly, you will see a JSON
+      response in the browser containing your application's access_token.
+
+  You have now successfully authenticated via Google on your local machine
+
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  > @router.get("/callback")                                                                                                                │
+│    async def auth_callback(code: str, auth_service: AuthServiceInterface = Depends(get_auth_service)):                                     │
+│        """                                                                                                                                 │
+│        Handle the Google OAuth callback.                                                                                                   │
+│        This endpoint receives the authorization code and exchanges it for a JWT token.                                                     │
+│        """                                                                                                                                 │
+│                                                                                                                                            │
+│                                                                                                                                            │
+│    this auth_callback function, so is this code argument passed by google as a queryparam or request body, and why is this a GET request?  │
+│                                                                                                                                            │
+│    self.oauth_client.get_access_token(                                                                                                     │
+│    this is a network call right to google api?                                                                                             │
+│                                                                                                                                            │
+│    self.oauth_client.get_profile_info(token["access_token"])                                                                               │
+│    this is yet another network call to google right?                                                                                       │
+│                                                                                                                                            │
+│                                                                                                                                            │
+│    access_token = auth_service.create_access_token(                                                                                        │
+│        data={"sub": user.google_id}                                                                                                        │
+│    )                                                                                                                                       │
+│                                                                                                                                            │
+│    why is this JWT needed? expiry?                                                                                                         │
+│                                                                                                                                            │
+│    what happens if token is expired?(where the expiry check being done in the code) (like /api/auth/me), how should frontend react?        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+✦ Excellent questions. These get to the very heart of how this authentication flow works. Let's break them down.
+
+  1. auth_callback Function Analysis
+
+  > so is this code argument passed by google as a queryparam or request body, and why is this a GET request?
+
+  You are exactly right. The code is passed as a query parameter.
+
+  After you successfully log in on Google's site, Google tells your browser to go back to the redirect_uri you configured. A browser can only be
+  "redirected" using a GET request. Therefore, Google appends the authorization code to the URL as a query parameter.
+
+  The URL in your browser's address bar will look like this:
+
+  http://127.0.0.1:8000/api/auth/callback?code=4/0AeaYSHB...some-very-long-string...&scope=email+profile
+
+  FastAPI automatically sees the code query parameter in the URL and passes it as an argument to your auth_callback function. It's a GET request
+  because it's the result of a standard browser redirect.
+
+  2. The Two Network Calls to Google
+
+  > self.oauth_client.get_access_token(...) this is a network call right to google api?
+
+  Yes, absolutely. This is the first critical, secure, server-to-server network call. Your backend sends a POST request to Google's token endpoint.
+  This request contains the temporary code you just received, along with your app's client_id and client_secret. Because it includes the
+  client_secret, this call must only happen on the backend and never in the frontend. Google validates these details and, if they are correct,
+  returns the access_token.
+
+  > self.oauth_client.get_profile_info(token["access_token"]) this is yet another network call to google right?
+
+  Yes, this is the second network call. The access_token you just received is like a key. It doesn't contain your user information itself. To get
+  the user's data, your backend must now use that key. It makes a GET request to Google's user profile API endpoint, including the access_token in
+  the Authorization header. Google sees the valid token and returns the user's profile information (name, email, etc.) that you requested in the
+  scope.
+
+  3. The Application's Own JWT
+
+  > why is this JWT needed? expiry?
+
+  This is the most important concept for understanding modern authentication. You create your own JWT for several critical reasons:
+
+   1. Decoupling and Independence: Your frontend should not care that you used Google to log in. After the initial login, it should only communicate
+      with your backend. Your application's JWT is the key for your application, while the Google Access Token is the key for Google's services. This
+      allows you to add other login methods (Facebook, email/password) later without changing anything about how your frontend handles sessions.
+
+   2. Statelessness and Scalability: The JWT contains all the information needed to identify the user ("sub": user.google_id). When your frontend
+      sends this JWT with an API request, the backend can verify it using the JWT_SECRET_KEY without needing to look up a session in a database. This
+      is extremely fast and efficient, and it allows you to scale your application across many servers easily.
+
+   3. Security: The Google Access Token is powerful and grants access to the user's Google account. You don't want to store that in the browser's
+      local storage where it could be more vulnerable. Your own JWT is specific to your app, has a defined (and often shorter) expiry, and carries
+      less risk if it's ever compromised.
+
+  Yes, expiry is a crucial feature. When you call create_access_token, the code explicitly sets an expiration time:
+
+   1 # auth_service.py
+   2 expire = datetime.utcnow() + timedelta(minutes=self.jwt_exp_mins)
+   3 to_encode.update({"exp": expire}) # 'exp' is the standard JWT claim for expiration
+
+  This bakes the expiration time directly into the token.
+
+  4. Handling Token Expiration
+
+  > what happens if token is expired?(where the expiry check being done in the code) (like /api/auth/me), how should frontend react?
+
+  The expiry check happens automatically inside the get_current_user dependency.
+
+  Where the check happens:
+
+    1 # dependencies.py
+    2 async def get_current_user(...):
+    3     user = await auth_service.get_current_user(token) # This calls the service
+    4     # ...
+    5
+    6 # auth_service.py
+    7 async def get_current_user(self, token: str):
+    8     try:
+    9         # THIS IS THE LINE THAT CHECKS EXPIRATION
+   10         payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algo])
+   11         # ...
+   12     except JWTError: # This catches all JWT errors, including expiration
+   13         return None
+
+  The jwt.decode() function from the jose library is responsible for all validation. When it decodes the token, it checks three things:
+   1. Is the signature valid (was it signed with our secret key)?
+   2. Is the token well-formed?
+   3. Has the `exp` timestamp passed?
+
+  If the token is expired, jwt.decode() will raise an ExpiredSignatureError (which is a type of JWTError). The try...except JWTError block catches
+  this, and the function returns None.
+
+  Back in dependencies.py, since user is None, this code is triggered:
+
+   1 # dependencies.py
+   2 if user is None:
+   3     raise HTTPException(
+   4         status_code=status.HTTP_401_UNAUTHORIZED, # The frontend gets a 401
+   5         detail="Invalid authentication credentials",
+   6         headers={"WWW-Authenticate": "Bearer"},
+   7     )
+
+  How the frontend should react:
+
+  This is a standard flow for all modern web apps.
+
+   1. The frontend makes an API request to a protected endpoint like /api/auth/me, sending its JWT.
+   2. The server responds with a `401 Unauthorized` status code.
+   3. The frontend's API handling logic (often in an "axios interceptor" or a similar global handler) should be configured to watch for 401 responses.
+   4. When it sees a 401, the frontend must:
+       * Delete the expired JWT from its storage (Local Storage, Session Storage, or cookies).
+       * Clear any user data from its global state (Redux, Vuex, etc.).
+       * Redirect the user to the login page.
+
+  The user is now effectively logged out and can start the login process again to get a fresh, valid JWT.
+
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  > The frontend makes an API request to a protected endpoint like /api/auth/me, sending its JWT.:: when is this done occasionally?  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+✦ That's a fantastic question. It gets at the practical, real-world use of this endpoint in a Single-Page Application (SPA).
+
+  The call to /api/auth/me is not made randomly. It's made at very specific, critical moments to answer the fundamental question: "Is there a valid,
+  logged-in user for this session?"
+
+  Think of it like this: Your JWT is like a ticket to a festival. You get it once at the entrance. You don't need to go back to the main gate for
+  every single food stall or stage you visit. However, if you leave and come back the next day, the security guard at the gate needs to check your
+  ticket again to let you in.
+
+  Here are the primary occasions when the frontend calls /api/auth/me:
+
+  1. The Most Important Case: Initial Application Load
+
+  This is the main reason the endpoint exists.
+
+   * Scenario: A user, who has logged in before, closes their browser tab. Later, they open a new tab and navigate directly to your application's URL
+     (e.g., https://my-heisenberg-app.com/dashboard).
+   * The Problem: The frontend application loads from scratch. Its memory (its state in Redux, Vuex, etc.) is completely empty. It has no idea who
+     the user is. However, it sees that a JWT is saved in the browser's Local Storage from the last session.
+   * The Action: The frontend cannot blindly trust this token. It needs to validate it. So, upon starting up, its first order of business is to take
+     that token from storage and send it to the /api/auth/me endpoint.
+   * The Outcome:
+       * Success (200 OK): The backend receives the token, validates it (checks signature and expiry), and sends back the user's data ({ "name":
+         "Rohan", "email": "...", ... }). The frontend now knows the user is authenticated. It populates its state with this user data and renders
+         the full, logged-in version of the application (e.g., showing "Welcome, Rohan" in the corner).
+       * Failure (401 Unauthorized): The backend sees the token is expired or invalid. It sends back a 401 error. The frontend now knows the user is
+         not authenticated. It should immediately delete the invalid token from Local Storage and redirect the user to the login page.
+
+  This single check on application load is what creates a persistent, "remember me" login experience.
+
+  2. Immediately After Login
+
+   * Scenario: A new user has just completed the Google OAuth flow. Your /api/auth/callback endpoint has successfully returned a brand new JWT to the
+     frontend.
+   * The Problem: In your current implementation, the /callback endpoint only returns the token itself: {"access_token": "...", "token_type":
+     "bearer"}. The frontend has the "key" but doesn't yet have the user's name, email, or other details to display in the UI.
+   * The Action: Right after receiving the token from the callback and saving it to Local Storage, the frontend will immediately use that new token
+     to call /api/auth/me.
+   * The Outcome: The backend validates the new token and returns the full user profile. The frontend can now display a welcome message and populate
+     the user's profile information in the UI.
+
+  ---
+
+  What it is NOT used for:
+
+  It's important to understand that /api/auth/me is not called for every single API request.
+
+  Once the application has loaded and confirmed the user is logged in (from scenario #1), that user data is held in the frontend's state. For all
+  other API calls (e.g., to get a list of game rooms, to send a chat message), the frontend simply attaches the JWT to the Authorization header.
+  The backend will validate the JWT on each of those calls, but the frontend doesn't need to repeatedly ask "who am I?" by calling /api/auth/me.
+
+  In summary, the call to /api/auth/me is a crucial synchronization step that happens at the beginning of a user's session to bootstrap the
+  frontend's state and verify the user's identity.
+

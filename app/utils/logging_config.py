@@ -43,3 +43,5 @@ def configure_logging():
     # Log the configuration
     logger = logging.getLogger(__name__)
     logger.info(f"Logging configured - App: {LOG_LEVEL}, MongoDB: {MONGO_LOG_LEVEL}, Uvicorn: {UVICORN_LOG_LEVEL}")
+
+

@@ -1,22 +1,40 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from typing import Optional
-
-from app.models.user import UserInDB
 from app.services.auth_service import AuthService
+from app.services.user_repository import UserRepository
+from app.services.auth_service_interface import AuthServiceInterface
+from app.models.user import UserInDB
+from app.config.settings import (
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    OAUTH_REDIRECT_URL,
+    JWT_SECRET_KEY,
+    JWT_ALGORITHM,
+    JWT_EXPIRATION_MINUTES
+)
 
-# OAuth2 scheme for JWT token extraction
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/callback")
 
-# Initialize auth service
-auth_service = AuthService()
+def get_user_repository() -> UserRepository:
+    return UserRepository()
 
+def get_auth_service(
+    user_repo: UserRepository = Depends(get_user_repository)
+) -> AuthServiceInterface:
+    return AuthService(
+        user_repository=user_repo,
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        redirect_url=OAUTH_REDIRECT_URL,
+        jwt_secret=JWT_SECRET_KEY,
+        jwt_algo=JWT_ALGORITHM,
+        jwt_exp_mins=JWT_EXPIRATION_MINUTES
+    )
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
-    """
-    Dependency to get the current authenticated user.
-    Raises a 401 exception if authentication fails.
-    """
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    auth_service: AuthServiceInterface = Depends(get_auth_service)
+) -> UserInDB:
     user = await auth_service.get_current_user(token)
     if user is None:
         raise HTTPException(
@@ -25,16 +43,3 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
-
-
-async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[UserInDB]:
-    """
-    Dependency to get the current user if authenticated, or None if not.
-    Does not raise an exception if authentication fails.
-    """
-    if token is None:
-        return None
-    try:
-        return await auth_service.get_current_user(token)
-    except HTTPException:
-        return None

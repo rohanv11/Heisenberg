@@ -4,9 +4,9 @@ import logging
 from typing import Dict, Any
 
 from app.models.user import Token, UserResponse, UserInDB
-from app.services.auth_service import AuthService
-from app.api.dependencies import get_current_user
-from app.utils.exception_handlers import handle_exceptions
+from app.services.auth_service_interface import AuthServiceInterface
+from app.api.dependencies import get_current_user, get_auth_service
+
 
 router = APIRouter(
     prefix="/auth",
@@ -19,25 +19,18 @@ router = APIRouter(
     },
 )
 
-auth_service = AuthService()
 logger = logging.getLogger(__name__)
 
 
 @router.get("/login")
-@handle_exceptions
-async def login():
+async def login(auth_service: AuthServiceInterface = Depends(get_auth_service)):
     """
     Get Google OAuth login URL.
+    Here, we just contruct the and return back to frontend.
+    User should go to this URL return from here.(thats the google sign in URL)
     The frontend should redirect the user to this URL to start the OAuth flow.
     """
     try:
-        print("helllo!!!")
-        if not auth_service.oauth_client.client_id or not auth_service.oauth_client.client_secret:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="OAuth credentials not configured"
-            )
-        
         return {"login_url": await auth_service.get_authorization_url()}
     except Exception as e:
         logger.exception(f"Login error: {str(e)}")
@@ -48,8 +41,7 @@ async def login():
 
 
 @router.get("/callback")
-@handle_exceptions
-async def auth_callback(code: str):
+async def auth_callback(code: str, auth_service: AuthServiceInterface = Depends(get_auth_service)):
     """
     Handle the Google OAuth callback.
     This endpoint receives the authorization code and exchanges it for a JWT token.
@@ -67,7 +59,6 @@ async def auth_callback(code: str):
             detail="Authentication failed"
         )
     
-    # Create JWT token
     access_token = auth_service.create_access_token(
         data={"sub": user.google_id}
     )
@@ -76,7 +67,6 @@ async def auth_callback(code: str):
 
 
 @router.get("/me", response_model=UserResponse)
-@handle_exceptions
 async def get_current_user_info(current_user: UserInDB = Depends(get_current_user)):
     """
     Get information about the currently authenticated user.

@@ -6,7 +6,7 @@ from app.api.router import router as api_router
 from app.api.room_router import router as room_router
 from app.api.auth_router import router as auth_router
 from app.api.board_router import router as board_router
-from app.config.settings import DEBUG_MODE, DEBUG_PORT, SERVER_HOST, SERVER_PORT
+from app.config.settings import DEBUG_MODE
 from app.utils.logging_config import configure_logging
 from app.utils.exception_handlers import register_exception_handlers
 from app.events.startup_shutdown import setup_debug_if_enabled
@@ -41,10 +41,11 @@ server_app.add_middleware(
 register_exception_handlers(server_app)
 
 # Include routers
-server_app.include_router(api_router, prefix="/api")
-server_app.include_router(room_router, prefix="/api")
-server_app.include_router(auth_router, prefix="/api")
-server_app.include_router(board_router, prefix="/api")
+PREFIX = "/api"
+server_app.include_router(api_router, prefix=PREFIX)
+server_app.include_router(room_router, prefix=PREFIX)
+server_app.include_router(auth_router, prefix=PREFIX)
+server_app.include_router(board_router, prefix=PREFIX)
 
 # Initialize and mount the Socket.IO app to the FastAPI app
 # This creates a WebSocket endpoint at /ws path

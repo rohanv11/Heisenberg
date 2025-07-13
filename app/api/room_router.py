@@ -15,7 +15,7 @@ from app.models.game_models import Room, RoomStatus, GameConfig, Player, BoardCo
 from app.models.user import UserInDB
 from app.models.exceptions import GameError
 from app.api.dependencies import get_current_user
-from app.utils.exception_handlers import handle_exceptions
+
 
 
 router = APIRouter()
@@ -34,7 +34,7 @@ class CreateRoomRequest(BaseModel):
 
 
 @router.post("/rooms", response_model=Dict)
-@handle_exceptions
+
 async def create_room(
     request: CreateRoomRequest,
     current_user: UserInDB = Depends(get_current_user)
@@ -96,7 +96,7 @@ async def create_room(
 
 
 @router.get("/rooms", response_model=List[Room])
-@handle_exceptions
+
 async def list_rooms(
     status: Optional[str] = None,
     current_user: UserInDB = Depends(get_current_user)
@@ -106,6 +106,7 @@ async def list_rooms(
     Uses both in-memory rooms and rooms from room service.
     """
     try:
+        print("list room entry")
         room_status = None
         if status is not None:
             try:
@@ -142,7 +143,7 @@ async def list_rooms(
 
 
 @router.get("/rooms/{room_id}", response_model=Room)
-@handle_exceptions
+
 async def get_room(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -172,7 +173,7 @@ async def get_room(
 
 
 @router.post("/rooms/{room_id}/join")
-@handle_exceptions
+
 async def join_room_api(
     room_id: str,
     player_name: str = Body(..., embed=True),
@@ -254,7 +255,7 @@ async def join_room_api(
 
 
 @router.post("/rooms/{room_id}/start")
-@handle_exceptions
+
 async def start_game(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
@@ -319,7 +320,7 @@ async def start_game(
 
 
 @router.get("/rooms/{room_id}/players", response_model=List[Player])
-@handle_exceptions
+
 async def get_players(
     room_id: str,
     current_user: UserInDB = Depends(get_current_user)
