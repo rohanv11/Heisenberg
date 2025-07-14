@@ -17,6 +17,7 @@ class AuthService(AuthServiceInterface):
             client_id=client_id,
             client_secret=client_secret
         )
+        self.client_id = client_id
         self.redirect_url = redirect_url
         self.jwt_secret = jwt_secret
         self.jwt_algo = jwt_algo
@@ -26,7 +27,7 @@ class AuthService(AuthServiceInterface):
         """Get the Google OAuth authorization URL."""
         return await self.oauth_client.get_authorization_url(
             redirect_uri=self.redirect_url,
-            scope=["email", "profile"]
+            scope=["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
         )
 
     async def exchange_code(self, code: str) -> OAuth2Token:
@@ -38,9 +39,33 @@ class AuthService(AuthServiceInterface):
         return token
 
     async def get_user_info(self, token: OAuth2Token) -> Dict[str, Any]:
-        """Get user information from Google OAuth."""
-        user_info = await self.oauth_client.get_profile_info(token["access_token"])
-        return user_info
+        """Get user information from Google OAuth using the id_token."""
+        print("token", token)
+        # --- Start of new id_token decoding logic ---
+        id_token = token.get("id_token")
+        if not id_token:
+            raise ValueError("id_token not found in OAuth2Token response.")
+
+        # Decode the ID token to get the payload.
+        # Google's ID tokens are signed with RS256.
+        # For this specific use case (getting user info from a token just received from Google),
+        # we can decode the payload directly without verifying the signature against Google's keys,
+        # as the token was just received from a trusted Google endpoint.
+        payload = jwt.decode(id_token, key=None, 
+                             options={"verify_signature": False, "verify_at_hash": False}, 
+                             audience=self.client_id)
+
+        return {
+            "sub": payload.get("sub"),
+            "email": payload.get("email"),
+            "name": payload.get("name", payload.get("given_name", payload.get("email"))), # Fallback for name
+        }
+        # --- End of new id_token decoding logic ---
+
+        # --- Original code (commented out) ---
+        # user_info = await self.oauth_client.get_profile(token["access_token"])
+        # return user_info
+        # --- End of original code ---
 
     async def authenticate_user(self, code: str) -> Optional[UserInDB]:
         """
@@ -50,7 +75,18 @@ class AuthService(AuthServiceInterface):
         try:
             token = await self.exchange_code(code)
             user_info = await self.get_user_info(token)
-            
+            print("user info fetch from google", user_info)
+
+            # Create a UserInDB instance directly, bypassing the database for testing
+            user = UserInDB.create_from_google(
+                email=user_info.get("email", ""),
+                name=user_info.get("name", "Unknown User"),
+                google_id=user_info["sub"]
+            )
+            return user
+
+            # The original DB code below is not reached, but is kept as requested.
+            # To implement DB part
             user = await self.user_repository.get_user_by_google_id(user_info["sub"])
             
             if user:

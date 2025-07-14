@@ -5,8 +5,8 @@ from app.services.user_repository import UserRepository
 from app.services.auth_service_interface import AuthServiceInterface
 from app.models.user import UserInDB
 from app.config.settings import (
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
+    GOOGLE_OAUTH_CLIENT_ID,
+    GOOGLE_OAUTH_CLIENT_SECRET,
     OAUTH_REDIRECT_URL,
     JWT_SECRET_KEY,
     JWT_ALGORITHM,
@@ -23,8 +23,8 @@ def get_auth_service(
 ) -> AuthServiceInterface:
     return AuthService(
         user_repository=user_repo,
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
+        client_id=GOOGLE_OAUTH_CLIENT_ID,
+        client_secret=GOOGLE_OAUTH_CLIENT_SECRET,
         redirect_url=OAUTH_REDIRECT_URL,
         jwt_secret=JWT_SECRET_KEY,
         jwt_algo=JWT_ALGORITHM,

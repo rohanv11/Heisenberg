@@ -63,6 +63,7 @@ async def auth_callback(code: str, auth_service: AuthServiceInterface = Depends(
         data={"sub": user.google_id}
     )
     
+    print("access token for current user formed by us", access_token)
     return Token(access_token=access_token)
 
 

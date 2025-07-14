@@ -40,9 +40,9 @@ MONGO_LOG_LEVEL = os.getenv("MONGO_LOG_LEVEL", "warning").lower()  # MongoDB log
 UVICORN_LOG_LEVEL = os.getenv("UVICORN_LOG_LEVEL", "info").lower()  # Uvicorn/FastAPI log level
 
 # Google OAuth Config
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "dummy_secret")
-OAUTH_REDIRECT_URL = os.getenv("OAUTH_REDIRECT_URL", "http://localhost:8000/api/auth/callback")
+GOOGLE_OAUTH_CLIENT_ID = os.environ["GOOGLE_OAUTH_CLIENT_ID"]
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ["GOOGLE_OAUTH_CLIENT_SECRET"]
+OAUTH_REDIRECT_URL = os.getenv("OAUTH_REDIRECT_URL", "http://127.0.0.1:8000/api/auth/callback")
 
 # JWT Config
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecretkey")
@@ -69,8 +69,8 @@ if IS_DEVELOPMENT:
 elif IS_PRODUCTION:
     # Production-specific settings
     DEBUG_MODE = False
-    assert GOOGLE_CLIENT_ID, "GOOGLE_CLIENT_ID must be set in production"
-    assert GOOGLE_CLIENT_SECRET, "GOOGLE_CLIENT_SECRET must be set in production"
+    assert GOOGLE_OAUTH_CLIENT_ID, "GOOGLE_OAUTH_CLIENT_ID must be set in production"
+    assert GOOGLE_OAUTH_CLIENT_SECRET, "GOOGLE_OAUTH_CLIENT_SECRET must be set in production"
     assert JWT_SECRET_KEY != "supersecretkey", "JWT_SECRET_KEY must be changed in production"
 elif IS_TESTING:
     # Testing-specific settings
