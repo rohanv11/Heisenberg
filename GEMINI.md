@@ -30,3 +30,5 @@
 - If design is unclear, suggest LLD options first.
 - If a game rule is ambiguous, clarify or infer logically.
 
+## Sample Json generation.
+- Always populate samples.

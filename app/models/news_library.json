@@ -1,0 +1,75 @@
+{
+    "general": {
+        "positive": [
+            {
+                "id": "GEN_P01",
+                "headline": "Market sentiment is bullish as foreign investment increases.",
+                "impact": "General market prices are likely to trend upwards."
+            }
+        ],
+        "negative": [
+            {
+                "id": "GEN_N01",
+                "headline": "Regulatory uncertainty causes market-wide jitters.",
+                "impact": "Expect increased volatility across all sectors."
+            }
+        ],
+        "neutral": [
+            {
+                "id": "GEN_U01",
+                "headline": "Market holds steady as investors await inflation data.",
+                "impact": "Most stocks are holding their current values with low trading volume."
+            }
+        ]
+    },
+    "stock_specific": {
+        "TCS": {
+            "extreme_positive": [
+                {
+                    "id": "TCS_EP01",
+                    "headline": "TCS announces revolutionary AI patent, stock skyrockets.",
+                    "impact": "A major breakthrough is expected to lead to record-breaking growth."
+                }
+            ],
+            "positive": [
+                {
+                    "id": "TCS_P01",
+                    "headline": "TCS secures a major contract with a European government.",
+                    "impact": "Strong positive signal for TCS, boosting investor confidence."
+                }
+            ],
+            "negative": [
+                {
+                    "id": "TCS_N01",
+                    "headline": "Reports of a global slowdown in IT spending worry investors.",
+                    "impact": "Negative sentiment may affect TCS and other IT giants."
+                }
+            ],
+            "neutral": []
+        },
+        "REL": {
+            "positive": [
+                {
+                    "id": "REL_P01",
+                    "headline": "Reliance Industries announces breakthrough in green energy.",
+                    "impact": "Positive outlook for Reliance stock as they enter a new high-growth market."
+                }
+            ],
+            "negative": [
+                {
+                    "id": "REL_N01",
+                    "headline": "Competition in the telecom sector intensifies, affecting Reliance's margins.",
+                    "impact": "Potential downward pressure on Reliance's stock price."
+                }
+            ],
+            "extreme_negative": [
+                {
+                    "id": "REL_EN01",
+                    "headline": "Reliance subsidiary faces unexpected regulatory fines.",
+                    "impact": "The stock is expected to take a significant hit as the news breaks."
+                }
+            ],
+            "neutral": []
+        }
+    }
+}

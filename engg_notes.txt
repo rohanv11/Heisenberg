@@ -1,0 +1,2 @@
+The player_stats.player.properties must be a SET, in json you cant declare a set, so its list there.
+The stock market pre populates 250 elements, so remember to update the new list as it the first 250 come about to exhaust.
