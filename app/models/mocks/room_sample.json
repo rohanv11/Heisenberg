@@ -22,142 +22,44 @@
         "stakes_enabled": true
     },
     "stock_market": {
+        "news_key_map": {
+            "N1": "GEN_P01",
+            "N2": "TCS_P01",
+            "N3": "REL_P01",
+            "N4": "GEN_N01"
+        },
         "stocks": {
             "REL": {
                 "name": "Reliance Industries",
                 "profile": "volatile_growth",
-                "price_history": [
-                    50,
-                    55,
-                    52,
-                    60,
-                    58,
-                    65,
-                    62,
-                    59,
-                    68,
-                    75,
-                    70,
-                    68,
-                    78,
-                    85,
-                    80
-                ]
+                "price_history": [50, 55, 52, 60, 58, 65, 62, 59, 68, 75, 70, 68, 78, 85, 80]
             },
             "TCS": {
                 "name": "Tata Consultancy Services",
                 "profile": "stable_growth",
-                "price_history": [
-                    60,
-                    61,
-                    62,
-                    61,
-                    62,
-                    63,
-                    64,
-                    65,
-                    66,
-                    65,
-                    66,
-                    67,
-                    68,
-                    69,
-                    70
-                ]
+                "price_history": [60, 61, 62, 61, 62, 63, 64, 65, 66, 65, 66, 67, 68, 69, 70]
             },
             "INF": {
                 "name": "Infosys",
                 "profile": "stable_growth",
-                "price_history": [
-                    40,
-                    40,
-                    41,
-                    41,
-                    42,
-                    43,
-                    43,
-                    44,
-                    45,
-                    46,
-                    45,
-                    46,
-                    47,
-                    48,
-                    49
-                ]
+                "price_history": [40, 40, 41, 41, 42, 43, 43, 44, 45, 46, 45, 46, 47, 48, 49]
             },
             "HDF": {
                 "name": "HDFC Bank",
                 "profile": "blue_chip",
-                "price_history": [
-                    80,
-                    80,
-                    81,
-                    81,
-                    81,
-                    82,
-                    82,
-                    82,
-                    83,
-                    83,
-                    83,
-                    84,
-                    84,
-                    84,
-                    85
-                ]
+                "price_history": [80, 80, 81, 81, 81, 82, 82, 82, 83, 83, 83, 84, 84, 84, 85]
             },
             "ITC": {
                 "name": "ITC Limited",
                 "profile": "loser",
-                "price_history": [
-                    90,
-                    88,
-                    86,
-                    87,
-                    84,
-                    82,
-                    80,
-                    81,
-                    78,
-                    76,
-                    75,
-                    74,
-                    72,
-                    73,
-                    70
-                ]
+                "price_history": [90, 88, 86, 87, 84, 82, 80, 81, 78, 76, 75, 74, 72, 73, 70]
             }
         },
         "news_schedule": {
-            "2": {
-                "general": [
-                    "GEN_P01"
-                ],
-                "stock_specific": {}
-            },
-            "6": {
-                "general": [],
-                "stock_specific": {
-                    "TCS": [
-                        "TCS_P01"
-                    ]
-                }
-            },
-            "9": {
-                "general": [],
-                "stock_specific": {
-                    "REL": [
-                        "REL_P01"
-                    ]
-                }
-            },
-            "13": {
-                "general": [
-                    "GEN_N01"
-                ],
-                "stock_specific": {}
-            }
+            "2": ["N1"],
+            "6": ["N2", "N4"],
+            "9": ["N3"],
+            "13": ["N4"]
         }
     },
     "board_data": {

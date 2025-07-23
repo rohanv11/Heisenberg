@@ -1,4 +1,10 @@
 {
+    "news_key_map": {
+        "N1": "GEN_P01",
+        "N2": "TCS_P01",
+        "N3": "REL_P01",
+        "N4": "GEN_N01"
+    },
     "stocks": {
         "REL": {
             "name": "Reliance Industries",
@@ -27,25 +33,9 @@
         }
     },
     "news_schedule": {
-        "11": {
-            "general": ["GEN_P01"],
-            "stock_specific": {}
-        },
-        "15": {
-            "general": [],
-            "stock_specific": {
-                "TCS": ["TCS_P01"]
-            }
-        },
-        "17": {
-            "general": [],
-            "stock_specific": {
-                "REL": ["REL_P01"]
-            }
-        },
-        "20": {
-            "general": ["GEN_N01"],
-            "stock_specific": {}
-        }
+        "11": ["N1"],
+        "15": ["N2"],
+        "17": ["N3"],
+        "20": ["N4"]
     }
 }
