@@ -3,11 +3,11 @@
     "room_code": "BDEK21",
     "status": "IN_PROGRESS",
     "players": {
-        "google-oauth2|101234567890123456789": {
+        "player_id_1": {
             "name": "Rohan",
             "is_host": true
         },
-        "google-oauth2|209876543210987654321": {
+        "player_id_2": {
             "name": "Emmanuel",
             "is_host": false
         }
@@ -22,7 +22,7 @@
         "stakes_enabled": true
     },
     "player_stats": {
-        "google-oauth2|101234567890123456789": {
+        "player_id_1": {
             "cash": 5500,
             "net_worth": 12500,
             "position": 12,
@@ -37,7 +37,7 @@
                 }
             }
         },
-        "google-oauth2|209876543210987654321": {
+        "player_id_2": {
             "cash": 1000,
             "net_worth": 8000,
             "position": 25,
@@ -90,6 +90,19 @@
                     ]
                 }
             }
+        },
+        "player_id_3": {
+            "cash": 3200,
+            "net_worth": 9800,
+            "position": 5,
+            "get_out_of_jail_cards": 0,
+            "is_bankrupt": false,
+            "assets": {
+                "properties": [],
+                "railways": [],
+                "utilities": [],
+                "stocks": {}
+            }
         }
     },
     "stock_market": {
@@ -135,9 +148,9 @@
     },
     "board_data": {
         "turn_number": 15,
-        "current_turn_player_id": "player_2_google_id",
+        "current_turn_player_id": "player_id_2",
         "valid_actions": {
-            "google-oauth2|101234567890123456789": [
+            "player_id_1": [
                 "ROLL_DICE",
                 "BUY_PROPERTY:1",
                 "MORTGAGE_PROPERTY:16",
@@ -146,14 +159,22 @@
                 "BUY_STOCKS",
                 "SELL_STOCKS"
             ],
-            "google-oauth2|209876543210987654321": [
+            "player_id_2": [
                 "RESOLVE_DEBT"
+            ],
+            "player_id_3": [
+                "INITIATE_TRADE",
+                "ACCEPT_TRADE:trade_fghij",
+                "REJECT_TRADE:trade_fghij",
+                "COUNTER_TRADE:trade_fghij",
+                "BUY_STOCKS",
+                "SELL_STOCKS"
             ]
         },
         "ongoing_trades": {
             "trade_abcde": {
-                "from_player": "google-oauth2|209876543210987654321",
-                "to_player": "google-oauth2|101234567890123456789",
+                "from_player": "player_id_2",
+                "to_player": "player_id_1",
                 "offer": {
                     "cash": 400
                 },
@@ -165,8 +186,8 @@
                 "status": "PROPOSED"
             },
             "trade_fghij": {
-                "from_player": "google-oauth2|player1",
-                "to_player": "google-oauth2|player3",
+                "from_player": "player_id_1",
+                "to_player": "player_id_3",
                 "offer": {
                     "cash": 100,
                     "properties": [
@@ -181,8 +202,8 @@
                 "status": "PROPOSED"
             },
             "trade_klmno": {
-                "from_player": "google-oauth2|player3",
-                "to_player": "google-oauth2|player2",
+                "from_player": "player_id_3",
+                "to_player": "player_id_2",
                 "offer": {
                     "properties": [
                         "34"
@@ -200,8 +221,8 @@
                 "status": "PROPOSED"
             },
             "trade_pqrst": {
-                "from_player": "google-oauth2|player1",
-                "to_player": "google-oauth2|player2",
+                "from_player": "player_id_1",
+                "to_player": "player_id_2",
                 "offer": {
                     "partial_ownership": {
                         "card_id": "9",
@@ -214,8 +235,8 @@
                 "status": "PROPOSED"
             },
             "trade_uvwxy": {
-                "from_player": "google-oauth2|player1",
-                "to_player": "google-oauth2|player2",
+                "from_player": "player_id_1",
+                "to_player": "player_id_2",
                 "offer": {
                     "cash": 200,
                     "properties": [
@@ -267,7 +288,9 @@
                     },
                     "mortgage_value": 30
                 },
-                "owned_by": {},
+                "owned_by": {
+                    "player_id_2": 100
+                },
                 "building_rights_owner": null,
                 "houses": 0,
                 "is_mortgaged": false,
@@ -324,7 +347,9 @@
                     },
                     "mortgage_value": 100
                 },
-                "owned_by": {},
+                "owned_by": {
+                    "player_id_2": 100
+                },
                 "is_mortgaged": false,
                 "players_here": []
             },
@@ -346,9 +371,11 @@
                     },
                     "mortgage_value": 50
                 },
-                "owned_by": {},
-                "building_rights_owner": null,
-                "houses": 0,
+                "owned_by": {
+                    "player_id_2": 100
+                },
+                "building_rights_owner": "player_id_2",
+                "houses": 2,
                 "is_mortgaged": false,
                 "players_here": []
             },
@@ -375,9 +402,11 @@
                     },
                     "mortgage_value": 50
                 },
-                "owned_by": {},
-                "building_rights_owner": null,
-                "houses": 0,
+                "owned_by": {
+                    "player_id_2": 100
+                },
+                "building_rights_owner": "player_id_2",
+                "houses": 2,
                 "is_mortgaged": false,
                 "players_here": []
             },
@@ -399,9 +428,11 @@
                     },
                     "mortgage_value": 60
                 },
-                "owned_by": {},
-                "building_rights_owner": null,
-                "houses": 0,
+                "owned_by": {
+                    "player_id_2": 100
+                },
+                "building_rights_owner": "player_id_2",
+                "houses": 1,
                 "is_mortgaged": false,
                 "players_here": []
             },
@@ -410,11 +441,11 @@
                 "name": "Jail / Just Visiting",
                 "players_here": [],
                 "player_specific_data": {
-                    "google-oauth2|player1": {
+                    "player_id_1": {
                         "is_in_jail": true,
                         "jail_turns": 1
                     },
-                    "google-oauth2|player3": {
+                    "player_id_3": {
                         "is_in_jail": true,
                         "jail_turns": 2
                     }

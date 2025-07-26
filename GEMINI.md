@@ -32,3 +32,17 @@
 
 ## Sample Json generation.
 - Always populate samples.
+
+## Current server setup go through
+- Always go through this file to know what 
+  framework/logging server is using app/main.py
+  which DB is being setup etc.
+  and then according to it write efficient and maintainable code, following mentioned principles.
+
+## Make sure everything is async, this is a realtime game, saving time and making most of the code is highly important.
+
+# instructions while updating any json files.
+room_sample.json: This file contains the room_sample data as is, no short forms, its for human understanding.
+So, do not use forms, rather use the long key names, like players_here.
+relative file path = app/models/mocks/room_sample.json
+

@@ -12,6 +12,8 @@ from app.utils.exception_handlers import register_exception_handlers
 from app.events.startup_shutdown import setup_debug_if_enabled
 from app.services.board_service import BoardService
 from app.events.socket_manager import create_socketio_app
+from app.services.storage import get_storage
+from app.services.storage.postgres_storage import PostgresStorage
 
 # Configure all application logging in one place
 configure_logging()
@@ -67,14 +69,17 @@ async def health_check():
 
 @server_app.on_event("startup")
 async def startup_event():
-    # Load board data on startup
-    print("Running startup events...")
-    BoardService.load_boards()
+    logger.info("Running startup events...")
+    storage = get_storage()
+    if isinstance(storage, PostgresStorage):
+        await storage.connect()
+        logger.info("PostgreSQL connection pool created.")
     await setup_debug_if_enabled()
 
-# Register startup and shutdown events
-# server_app.add_event_handler("shutdown", shutdown_db_client)
-
-# Note: The server is started by the Dockerfile CMD command
-# This avoids having two different ways to start the server
-print("7777n7s s  qwdnoiuwqb")
+@server_app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Running shutdown events...")
+    storage = get_storage()
+    if isinstance(storage, PostgresStorage):
+        await storage.close()
+        logger.info("PostgreSQL connection pool closed.")

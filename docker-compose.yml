@@ -16,7 +16,8 @@ services:
       - ENV=development
       - DEBUG_PORT=5678
       - DEBUG_MODE=${DEBUG_MODE:-false}  # Enable/disable remote debugging
-      - HOT_RELOAD=${HOT_RELOAD:-false}   # Enable hot reload for development
+      - HOT_RELOAD=${HOT_RELOAD:-true}   # Enable hot reload for development
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-memory} # memory or postgres
       - POSTGRES_USER=your_user
       - POSTGRES_PASSWORD=your_password
       - POSTGRES_DB=heisenberg

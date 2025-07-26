@@ -61,6 +61,10 @@ POSTGRES_USER = os.getenv("POSTGRES_USER", "your_user")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "your_password")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "heisenberg")
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
+
+# Storage Config
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "memory")
 
 # Configuration based on environment
 if IS_DEVELOPMENT:
