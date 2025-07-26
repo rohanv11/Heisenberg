@@ -160,7 +160,8 @@
                 "SELL_STOCKS"
             ],
             "player_id_2": [
-                "RESOLVE_DEBT"
+                "RESOLVE_DEBT",
+                "INITIATE_TRADE"
             ],
             "player_id_3": [
                 "INITIATE_TRADE",
